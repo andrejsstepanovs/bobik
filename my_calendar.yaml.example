@@ -1,0 +1,59 @@
+---
+# If this file is present, calendar tool will be used.
+# It is working with ics files, because then you dont need to jump milion hoops to get google api using oauth to work.
+# Make you calendar public and share the link to the ics file.
+# For when it is not wanted or possible, download the ics file and provide the path to folder where it is downloaded.
+# MyCalendar tool will crawl this directory for zip files and extract them to get the ics files.
+# Feature: Latest file for each calendar will be used. So dont worry
+           about having multiple `*.ical.zip`, `*.ical (2).zip`, etc files being there. Latest will be used.
+# Then it will process them to fill in re-occuring calendars and extract the events.
+# Result of all these requests and unzipping and parsing will be stored as python cache file named in `cache:`.
+# As long as that file is there, no requests will be made. I will implement more clever cache management later.
+# For now you will need workarounds. Simplest is just to rm this file before every run.
+ics:
+- type: url
+  origin: google
+  url: https://calendar.google.com/calendar/ical/EMAIL@EMAIL/private-11111111111111/basic.ics
+  private: 'Yes'
+  calendar_name: Private
+  name: Private
+- type: url
+  origin: google
+  url: https://calendar.google.com/calendar/ical/EMAIL@EMAIL/private-222222222222222/basic.ics
+  private: 'Yes'
+  calendar_name: CALENDAR NAME HERE
+  name: Private
+- type: zip_dir
+  origin: google
+  directory: '_PATH-TO_DOWNLOADS HERE/Downloads/'
+  file: email@email.com
+  calendar_name: CALENDAR NAME 2 HERE
+  private: 'No'
+  name: Work
+- type: zip_dir
+  origin: google
+  directory: '/home/username/Downloads/'
+  file: EMAIL@EMAIL.ical
+  calendar_name: CALENDAR NAME 1 HERE
+  private: 'No'
+  name: Work
+# emails list contains calendar event emails that you are interested in keeping. Leave list empty for all events.
+# If set, organizer and attendees will be checked, and if not part of this list, event will be ignored.
+emails:
+- INCLUDE_EMAIL_1@EMAIL.com
+- INCLUDE_EMAIL_2@EMAIL.com
+- INCLUDE_EMAIL_3@EMAIL.com
+# Filter events only that have these statusses.
+filter_status:
+- CONFIRMED
+# Ignore calendar events by name. If event name contains any of these strings, it will be ignored.
+ignore_event_names:
+- EXCLUDE EVENTS WITH THIS MATCH NAME
+# Number of days to load events for. FYI: cache file .pkl contains absolutely everything, so after its there, you can play with this number.
+days: 5
+# Caching parsed ical zip file and url ical content to file. Will improve cache invalidation later.
+# For now, you need to remove this file if you want fresh results. (or disable cache)
+cache:
+  enabled: 'Yes'
+  # works with path or without it. If without, will be saved in current directory.
+  file: '/full/path/to/cache/file/my_calendar_cache.pkl'
