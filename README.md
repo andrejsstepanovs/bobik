@@ -2,9 +2,61 @@ Here is the GitHub documentation for the AI Assistant project with proper Markdo
 
 ---
 
-# AI Assistant
+# Computer
 
-AI Assistant is a powerful and versatile tool that leverages state-of-the-art language models and a wide range of tools to assist you in your daily tasks. It can answer your questions, provide information, manage your calendar, and much more. The AI Assistant is designed to be highly customizable, allowing you to tailor its behavior and capabilities to your specific needs.
+I named this project "computer", because in the long run I want to implement hotword "Hei Computer" to trigger start of conversation.
+
+
+This project wraps most of langchain features and agent functionality and abstracts them into configuration file.
+As a user, you need to set up necessary api keys in .env file and define your models in my_config.yaml file.
+
+After that you will be able to talk with different LLMs using langchain agent with same kept memory. You can also enable, disable tools in config yaml file and inject your own tools easily.
+
+Features:
+- custom models
+-- custom prompts and configuration
+- all configuration fed into code from config file
+- text to voice
+-- with hotkey (2 x Alt) to start talking
+- voice to text
+-- with hotkey (2 x Alt) to prematurely stop
+- keeps memory even if switching between different models
+- tools with langchain agent
+- quick stage change using pre-parser (question not sent to LLM) or via tools (LLM uses tool):
+-- model switching
+-- input switching
+-- output switching
+-- enable / disable agent mode
+-- reset memory
+-- enable / disable tools
+-- graceful exit
+- forever conversation loop (default)
+- run only once (--once)
+- --quiet mode if you dont need any other output (useful for scripting tasks)
+- clipboard - includes clipboard in question
+- Custom tools
+-- Weather (wttr.in)
+-- Calendar (local ics file parser & url)
+-- Langchain tools
+--- bing search
+--- bing news
+--- google search
+--- wikipedia
+- piping stdin input as question
+- llm providers
+-- openai
+-- groq
+-- mistral
+-- google - not tested (not possible in my country)
+-- ollama
+-- custom openai api
+- question / answer history text file
+
+As you see a lot of functionality is baked into this app. This allows many unortodox and imaginative ways of using it. It can be chat, it can be one shot action, it can be plugged into bash scripts.
+
+## License
+
+The AI Assistant is licensed under the MIT License.
 
 ## Installation
 
@@ -14,9 +66,8 @@ To install the AI Assistant, follow these steps:
 1. Install ffplay if you want to have audio output.
 2. Clone the repository from GitHub.
 3. Install the required packages using `pip install -r requirements.txt`.
-4. Set up the environment variables by copying the `.env.example` file to `.env` and filling in the necessary values.
-5. Create `my_config.yaml` file.
-6. Run the `computer.py` script to start the AI Assistant.
+4. See `examples` to set up necessary environment variables and config yaml file.
+5. Run the `computer.py` script to start the AI Assistant.
 
 ## Windows
 Main functionality on Windows is working fine. 
@@ -30,54 +81,52 @@ Important:
 # Mac
 To be tested.
 
-## License
-
-The AI Assistant is licensed under the MIT License.
-
 ## Configuration
 
-The AI Assistant's behavior and capabilities can be customized through a configuration file `my_config.yaml`.
+The App behavior and capabilities can be customized through a configuration file `my_config.yaml`.
 
-### Configuration Examples
+See `examples` folder for more info.
 
-Here are some examples of how you can customize the AI Assistant using the `my_config.yaml` file:
 
-- You can specify the language model to be used by the AI Assistant by setting the `llm_model` value under the `models` section.
-- You can enable or disable specific tools by setting the `enabled` value to `true` or `false` under the `tools` section.
-- You can customize the AI Assistant's prompts by editing the `prompts` section.
-- First model, input and output in the list will be used as default one.
+### Pre-Parser
 
-### Pre-Parser Possibilities
-
-The AI Assistant's pre-parsers can be used to change the model, input or output method and more things with the first words in the message. Here are some examples:
+#### State change
+The App pre-parsers can be used to change the model, input or output method and more things with the first words in the message. Here are some examples:
 
 - To change the model to `gpt-3.5-turbo`, you can use the following pre-parser command: `computer.py gpt-3.5-turbo speak listen tell me a story`.
 - To change the input and output method to `voice`, you can use the following pre-parser command: `computer.py verbal`.
 - To change only input: `computer.py listen`. Remember to have same name here that is configured in `my_config.yaml` file under `io_input`, `io_output` and `models`.
 - Or just use default method that mostly should be set up as `text`: `computer.py When I will have time for a jogging session. Check my calendar events and weather so it is not raining and I have no meetings then.`.
 
-Note: The pre-parser commands should be included at the beginning of the first message.
+Note: These pre-parser commands should be included at the beginning of the first message.
+
+#### Question manipulation
+
+If enabled (config file) pre-parser will
+- append clipboard
+- append current time
 
 ### Voice Input and Output Capabilities
 
 The AI Assistant has voice input and output capabilities, allowing you to interact with it using your voice. You will be able to double tap `Alt` button twice to start talking and prematurely stop long output from AI using same hotkey shortcut.
 
-### Adding Your Own Tools
+### Extensability
 
-You can also add your own tools to the AI Assistant. To do this, you need to create a new `langchain`.
+App is built with extensability in mind. Almost anything should be possible to change in runtime.
+
+#### Adding Tools
 
 Once you have created your tool class, you can add it to the `app/tools` directory and register it with the `ToolLoader` class. The `ToolLoader` class is responsible for loading and managing the tools used by the AI Assistant.
 
-Here is an example of how you can create a custom tool that uses the OpenWeatherMap API to provide weather information:
+Here is an example of how you can create a custom tool:
 
-1. Create a new Python file in the `app/tools` directory and name it `weather.py`.
-2. Import the necessary libraries and classes at the beginning of the file:
+1. Create a new Python file.
 ```python
 from langchain.tools import BaseTool
 from typing import Optional
 from langchain_core.callbacks import CallbackManagerForToolRun
 ```
-3. Create a new class that inherits from the `BaseTool` class and implement the `_run` method:
+2. Create a new class that inherits from the `BaseTool` class and implement the `_run` method:
 ```python
 class MotivationTool(BaseTool):
     def _run(self, city: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
@@ -89,7 +138,7 @@ class MotivationTool(BaseTool):
         )
         return "Never forget how amazing you are."
 ```
-4. Register the custom tool with the `ToolLoader` class by adding the following line to the `app/tool_loader.py` file:
+3. Register the custom tool with the `ToolLoader` class by adding the following line to the `app/tool_loader.py` file:
 ```python
 computer = Computer()
 # ... see computer.py for more details
@@ -101,9 +150,9 @@ computer.tool_provider.add_tool(MotivationTool())
 computer.start(False, "I need something to cheer me up.")
 ```
 
-## Usage
+It is good idea to create your own main python script. Then origin future updates will not destroy your code.
 
-The AI Assistant can be used in various ways, depending on your needs and preferences.
+## Usage
 
 ### Using the Tool as Is
 
@@ -211,9 +260,21 @@ models:
 
 ## Future Development
 
-The AI Assistant is constantly being improved and updated as we are using it daily.
+The App is constantly being improved and updated as we are using it daily.
 In the future, we plan to add support for more language models and tools.
-Main focus for now is getting local voice to text and text to voice solution.
+Main focus for now is implementing local voice to text and text to voice solution.
 
-We also welcome contributions from the community,
-so feel free to submit a pull request or open an issue if you have any ideas or suggestions.
+### Known issues
+- re-work requirenments.txt
+- Windows voice input is not working
+- When running with `tools_enabled: false` history is not working
+- Synonyms not implemented completely
+- State input, output, model Tools are not dynamic (not using config parameters)
+
+## Missing features to add
+- Local text to voice & voice to text functionality is missing
+- pip installation
+- Package app in poetry
+
+
+Contributions are welcomed, feel free to submit a pull request or open an issue if you have any ideas or suggestions.

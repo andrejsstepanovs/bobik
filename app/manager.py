@@ -56,7 +56,7 @@ class ConversationManager:
         return self.agent
 
     def add_text_to_file(self, who, text):
-        if self.config.history_file != "":
+        if self.config.history_file is not None and self.config.history_file != "":
             with open(self.config.history_file, "a") as file:
                 datetime = time.strftime("%Y-%m-%d %H:%M:%S")
                 content = format_text(f"{datetime} {who}: {text}")
@@ -71,19 +71,20 @@ class ConversationManager:
             return state_changed, stop
 
         input_was_changed = False
-        if self.config.settings["pre-parsers"]["clipboard"]["enabled"]:
-            if check_text_for_phrases(state=self.state, contains=True, phrases=["clipboard"], question=self.user_input.question_text):
-                changed, out = ClipboardContentParser().parse(self.user_input.question_text)
+        if "pre-parsers" in self.config.settings:
+            if "clipboard" in self.config.settings["pre-parsers"] and self.config.settings["pre-parsers"]["clipboard"]["enabled"]:
+                if check_text_for_phrases(state=self.state, contains=True, phrases=["clipboard"], question=self.user_input.question_text):
+                    changed, out = ClipboardContentParser().parse(self.user_input.question_text)
+                    if changed:
+                        input_was_changed = True
+                        self.user_input.question_text = out
+
+            if "time" in self.config.settings["pre-parsers"] and self.config.settings["pre-parsers"]["time"]["enabled"]:
+                time_parser = CurrentTimeAndDateParser(timezone=self.config.prompt_replacements["timezone"], state=self.state)
+                changed, out = time_parser.parse(self.user_input.question_text)
                 if changed:
                     input_was_changed = True
                     self.user_input.question_text = out
-
-        if self.config.settings["pre-parsers"]["time"]["enabled"]:
-            time_parser = CurrentTimeAndDateParser(timezone=self.config.prompt_replacements["timezone"], state=self.state)
-            changed, out = time_parser.parse(self.user_input.question_text)
-            if changed:
-                input_was_changed = True
-                self.user_input.question_text = out
 
         if input_was_changed:
             self.add_text_to_file("Question pre-parser", self.user_input.question_text)

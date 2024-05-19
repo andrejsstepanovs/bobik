@@ -72,6 +72,8 @@ class ToolLoader:
         return tools
 
     def is_tool_enabled(self, name: str) -> bool:
+        if "tools" not in self.config.settings:
+            return False
         return bool(self.config.settings["tools"].get(name, {}).get("enabled"))
 
     def add_bing_search_tool(self, tools: list):
