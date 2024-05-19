@@ -49,6 +49,7 @@ Features:
 -- mistral
 -- google - not tested (not possible in my country)
 -- ollama
+-- lm studio
 -- custom openai api
 - question / answer history text file
 

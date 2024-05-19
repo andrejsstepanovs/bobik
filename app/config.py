@@ -41,6 +41,9 @@ class Configuration:
             "api_key": os.getenv("CUSTOM_PROVIDER_API_KEY"),
             "base_url": os.getenv("CUSTOM_PROVIDER_BASE_URL"),
         }
+        self.lmstudio_provider_settings = {
+            "base_url": os.getenv("LMSTUDIO_PROVIDER_BASE_URL"),
+        }
         self.serpapi_settings = {
             "api_key": os.getenv("SERPAPI_API_KEY"),
         }

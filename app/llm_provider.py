@@ -63,6 +63,14 @@ class LanguageModelProvider:
             )
             return model
 
+        if provider_name == "lm_studio" and self.config.lmstudio_provider_settings["base_url"] is not None:
+            model = ChatOpenAI(
+                temperature=self.state.temperature,
+                base_url=self.config.lmstudio_provider_settings["base_url"],
+                openai_api_key="not-needed",
+            )
+            return model
+
         if provider_name == "ollama" and self.config.ollama_settings["enabled"]:
             return Ollama(
                 model=model_name,
