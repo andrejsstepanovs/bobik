@@ -276,6 +276,6 @@ Main focus for now is implementing local voice to text and text to voice solutio
 - Local text to voice & voice to text functionality is missing
 - pip installation
 - Package app in poetry
-
+- Loading animation
 
 Contributions are welcomed, feel free to submit a pull request or open an issue if you have any ideas or suggestions.
