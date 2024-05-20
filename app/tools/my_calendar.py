@@ -11,12 +11,12 @@ class CalendarEventTool(BaseTool):
     """Tool for fetching calendar events."""
 
     name: str = "calendar_events"
-    description: str = "Use this tool to fetch upcoming calendar events. Tool have one optional parameter 'date'."
+    description: str = "Use this tool to fetch upcoming calendar events. Tool have one optional argument 'date'."
     calendar: Calendar = None
 
     def _run(
         self,
-        day: str = "Today",
+        date: str = "Today",
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         self.calendar.get_events()
@@ -30,9 +30,10 @@ class CalendarEventTool(BaseTool):
         ]
 
         filter_date = None
-        if day is not None and day != "":
-            filter_date = dateparser.parse(day)
-            filter_date_date = filter_date.strftime("%Y-%m-%d")
+        if date is not None and date != "":
+            filter_date = dateparser.parse(date)
+            if filter_date is not None:
+                filter_date_date = filter_date.strftime("%Y-%m-%d")
 
         for event in events:
             event_date = event["start"].strftime("%Y-%m-%d")

@@ -3,7 +3,8 @@ from typing import Optional
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from app.config import Configuration
-import datetime
+from datetime import datetime
+import dateparser
 
 
 class WeatherTool(BaseTool):
@@ -13,23 +14,32 @@ class WeatherTool(BaseTool):
     description: str = (
         "A wrapper around Weather Search. "
         "Useful for when you need to know current or upcoming weather. "
-        "Input should be location."
+        "Tool have one optional argument 'date'."
     )
-    cache: str = ""
+    cache: dict = {}
     config: Configuration = None
 
     def _run(
         self,
-        location: str,
+        date: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Use the tool."""
-        if not self.cache:
+
+        now = datetime.now()
+        filter_date = None
+        filter_date_date = ""
+        if date is not None and date != "":
+            filter_date = dateparser.parse(date)
+            if filter_date is not None:
+                filter_date_date = filter_date.strftime("%Y-%m-%d")
+
+        if filter_date_date not in self.cache:
             location = self.config.prompt_replacements["location"]
             location = location.replace(",", "").replace(" ", "-")
             response = requests.get(f"https://wttr.in/{location}?format=j1")
 
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            current_time = now.strftime("%Y-%m-%d %H:%M")
             weather_info = [f"Current time is {current_time}"]
             if response.status_code == 200:
                 data = response.json()
@@ -52,12 +62,16 @@ class WeatherTool(BaseTool):
                     weather_info.append(f"- Wind Speed (km/h): {current_condition['windspeedKmph']}")
                     weather_info.append("# Forecast:")
                     for current_condition in data['weather']:
+
+                        if filter_date is not None and filter_date_date != current_condition['date']:
+                            continue
+
                         weather_info.append(f"- {current_condition['date']}")
                         for description in current_condition['hourly']:
                             time = str(description['time']).zfill(4)
                             weather_info.append(
                                 f"-- {time[:2]}:{time[2:]}: {description['weatherDesc'][0]['value']}, {description['tempC']}°C, {description['chanceofrain']}% rain, {description['windspeedKmph']} km/h")
 
-            self.cache = "\n".join(weather_info)
+            self.cache[filter_date_date] = "\n".join(weather_info)
 
-        return self.cache
+        return self.cache[filter_date_date]
