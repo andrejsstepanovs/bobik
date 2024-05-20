@@ -1,0 +1,35 @@
+---
+# Point .env COMPUTER_CONFIG_FILE to this file. Like so:
+# -- .env --
+# COMPUTER_CONFIG_FILE=PATH_TO\computer\examples\1_minimal_groq\my_config.yaml
+prompts:
+  default: system_prompt.txt
+history:
+  enabled: false
+agent:
+  prompts:
+    - default
+  temperature: 0
+  name: Computer
+  max_tries: 3
+  sleep_seconds_between_tries: 2
+  agent_type: conversational-react-description
+  max_iterations: 4
+  tools_enabled: true
+phrases:
+  exit:
+    - q
+    - exit
+user:
+  location: Germany, Berlin
+  name: Master
+models:
+  groq:
+    provider: groq
+    model: llama3-70b-8192
+io_input:
+  text:
+    provider: text
+io_output:
+  write:
+    provider: text

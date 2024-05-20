@@ -122,7 +122,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+/.env
 .venv
 env/
 venv/
@@ -165,8 +165,7 @@ node_modules
 
 scratch
 my_history.txt
-my_config.yaml
-.env
+./my_config.yaml
 my_calendar.yaml
 prompts/*
 !prompts/private_prompt.txt
