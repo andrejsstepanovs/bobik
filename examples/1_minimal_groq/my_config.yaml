@@ -10,7 +10,7 @@ agent:
   prompts:
     - default
   temperature: 0
-  name: Computer
+  name: Bobik
   max_tries: 3
   sleep_seconds_between_tries: 2
   agent_type: conversational-react-description

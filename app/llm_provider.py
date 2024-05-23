@@ -68,6 +68,7 @@ class LanguageModelProvider:
                 temperature=self.state.temperature,
                 base_url=self.config.lmstudio_provider_settings["base_url"],
                 openai_api_key="not-needed",
+                max_tokens=4096,
             )
             return model
 
@@ -76,6 +77,7 @@ class LanguageModelProvider:
                 model=model_name,
                 temperature=self.state.temperature,
                 base_url=self.config.ollama_settings["url"],
+                #max_tokens=8192,
             )
 
         raise ValueError(f"model {self.state.llm_model} was not found. Probably it dont have api key set.")

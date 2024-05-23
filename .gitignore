@@ -165,8 +165,8 @@ node_modules
 
 scratch
 my_history.txt
-./my_config.yaml
+/my_config.yaml
 my_calendar.yaml
 prompts/*
-!prompts/private_prompt.txt
+!prompts/system_prompt.txt
 calendar_cache.pkl

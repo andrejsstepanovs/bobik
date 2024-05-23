@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# get rid of deprecation warning stdout.
-import warnings ; warnings.warn = lambda *args,**kwargs: None
-
 import asyncio
 import yaml
 import sys
@@ -24,7 +18,7 @@ warnings.warn = lambda *args, **kwargs: None
 load_dotenv()
 
 
-class Computer:
+class App:
     def __init__(self, config_file: str = ""):
         self.config_file = config_file
         self.manager = None
@@ -149,26 +143,3 @@ class Computer:
                 stdin_input = "\n\n" + stdin_input
 
         return stdin_input
-
-
-def computer_run():
-    app = Computer()
-    app.load_config_and_state()
-    app.load_options()
-    app.load_state_change_parser()
-
-    loop, quiet, first_question = app.process_arguments()
-    stdin_input = app.stdin_input()
-
-    if quiet:
-        app.state.is_quiet = quiet
-
-    app.load_manager()
-    if not loop:
-        app.manager.reload_agent()
-
-    app.start(loop, first_question + stdin_input)
-
-
-if __name__ == "__main__":
-    computer_run()

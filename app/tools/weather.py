@@ -14,7 +14,7 @@ class WeatherTool(BaseTool):
     description: str = (
         "A wrapper around Weather Search. "
         "Useful for when you need to know current or upcoming weather. "
-        "Tool have one optional argument 'date'."
+        "Tool have one optional argument that can have values like 'now', 'today', 'tomorrow' or specific date in format 'YYYY-MM-DD'."
     )
     cache: dict = {}
     config: Configuration = None
@@ -52,25 +52,25 @@ class WeatherTool(BaseTool):
                     weather_info.append("Location: ".join(location_info))
                     weather_info.append("")
 
-                weather_info.append("# Current Weather:")
-                for current_condition in data['current_condition']:
-                    for description in current_condition['weatherDesc']:
-                        weather_info.append(f"- Condition: {description['value']}")
-                    weather_info.append(f"- Temperature (°C): {current_condition['temp_C']}")
-                    weather_info.append(f"- Humidity: {current_condition['humidity']}")
-                    weather_info.append(f"- Cloud Cover (%): {current_condition['cloudcover']}")
-                    weather_info.append(f"- Wind Speed (km/h): {current_condition['windspeedKmph']}")
-                    weather_info.append("# Forecast:")
-                    for current_condition in data['weather']:
+                if filter_date is None or filter_date_date == now.strftime("%Y-%m-%d"):
+                    weather_info.append("# Current Weather:")
+                    for current_condition in data['current_condition']:
+                        for description in current_condition['weatherDesc']:
+                            weather_info.append(f"- Condition: {description['value']}")
+                        weather_info.append(f"- Temperature (°C): {current_condition['temp_C']}")
+                        weather_info.append(f"- Humidity: {current_condition['humidity']}")
+                        weather_info.append(f"- Cloud Cover (%): {current_condition['cloudcover']}")
+                        weather_info.append(f"- Wind Speed (km/h): {current_condition['windspeedKmph']}")
 
-                        if filter_date is not None and filter_date_date != current_condition['date']:
-                            continue
-
-                        weather_info.append(f"- {current_condition['date']}")
-                        for description in current_condition['hourly']:
-                            time = str(description['time']).zfill(4)
-                            weather_info.append(
-                                f"-- {time[:2]}:{time[2:]}: {description['weatherDesc'][0]['value']}, {description['tempC']}°C, {description['chanceofrain']}% rain, {description['windspeedKmph']} km/h")
+                weather_info.append("# Forecast:")
+                for current_condition in data['weather']:
+                    if filter_date is not None and filter_date_date != current_condition['date']:
+                        continue
+                    weather_info.append(f"- {current_condition['date']}")
+                    for description in current_condition['hourly']:
+                        time = str(description['time']).zfill(4)
+                        weather_info.append(
+                            f"-- {time[:2]}:{time[2:]}: {description['weatherDesc'][0]['value']}, {description['tempC']}°C, {description['chanceofrain']}% rain, {description['windspeedKmph']} km/h")
 
             self.cache[filter_date_date] = "\n".join(weather_info)
 

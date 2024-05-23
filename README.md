@@ -1,11 +1,4 @@
-Here is the GitHub documentation for the AI Assistant project with proper Markdown formatting:
-
----
-
-# Computer
-
-I named this project "computer", because in the long run I want to implement hotword "Hei Computer" to trigger start of conversation.
-
+# Bobik - AI Assistant
 
 This project wraps most of langchain features and agent functionality and abstracts them into configuration file.
 As a user, you need to set up necessary api keys in .env file and define your models in my_config.yaml file.
@@ -43,6 +36,7 @@ Features:
 --- google search
 --- wikipedia
 - piping stdin input as question
+- pasting input from clipboard - Use following template "my question here: <paste>" 
 - llm providers
 -- openai
 -- groq
@@ -68,7 +62,7 @@ To install the AI Assistant, follow these steps:
 2. Clone the repository from GitHub.
 3. Install the required packages using `pip install -r requirements.txt`.
 4. See `examples` to set up necessary environment variables and config yaml file.
-5. Run the `computer.py` script to start the AI Assistant.
+5. Run the `run.py` script to start the AI Assistant.
 
 ## Windows
 Main functionality on Windows is working fine. 
@@ -94,10 +88,10 @@ See `examples` folder for more info.
 #### State change
 The App pre-parsers can be used to change the model, input or output method and more things with the first words in the message. Here are some examples:
 
-- To change the model to `gpt-3.5-turbo`, you can use the following pre-parser command: `computer.py gpt-3.5-turbo speak listen tell me a story`.
-- To change the input and output method to `voice`, you can use the following pre-parser command: `computer.py verbal`.
-- To change only input: `computer.py listen`. Remember to have same name here that is configured in `my_config.yaml` file under `io_input`, `io_output` and `models`.
-- Or just use default method that mostly should be set up as `text`: `computer.py When I will have time for a jogging session. Check my calendar events and weather so it is not raining and I have no meetings then.`.
+- To change the model to `gpt-3.5-turbo`, you can use the following pre-parser command: `run.py gpt-3.5-turbo speak listen tell me a story`.
+- To change the input and output method to `voice`, you can use the following pre-parser command: `run.py verbal`.
+- To change only input: `run.py listen`. Remember to have same name here that is configured in `my_config.yaml` file under `io_input`, `io_output` and `models`.
+- Or just use default method that mostly should be set up as `text`: `run.py When I will have time for a jogging session. Check my calendar events and weather so it is not raining and I have no meetings then.`.
 
 Note: These pre-parser commands should be included at the beginning of the first message.
 
@@ -141,14 +135,14 @@ class MotivationTool(BaseTool):
 ```
 3. Register the custom tool with the `ToolLoader` class by adding the following line to the `app/tool_loader.py` file:
 ```python
-computer = Computer()
-# ... see computer.py for more details
-computer.load_config_and_state()
-computer.load_options()
-computer.load_state_change_parser()
-computer.load_manager()
-computer.tool_provider.add_tool(MotivationTool())
-computer.start(False, "I need something to cheer me up.")
+app = App()
+# ... see app.py for more details
+app.load_config_and_state()
+app.load_options()
+app.load_state_change_parser()
+app.load_manager()
+app.tool_provider.add_tool(MotivationTool())
+app.start(False, "I need something to cheer me up.")
 ```
 
 It is good idea to create your own main python script. Then origin future updates will not destroy your code.
@@ -157,14 +151,14 @@ It is good idea to create your own main python script. Then origin future update
 
 ### Using the Tool as Is
 
-To use the AI Assistant as is, simply run the `computer.py` script and start interacting with it through the command line interface.
+To use the AI Assistant as is, simply run the `app.py` script and start interacting with it through the command line interface.
 It will run in the loop using default `agent` (depends on model configuration) mode with memory attached.
 
 ### Using the Tool as a Library
 
 You can also use the AI Assistant as a library in your own Python projects.
 To do this, you need to import the necessary classes and functions from the `app` package and
-create an instance of the `Computer` or `ConversationManager` class.
+create an instance of the `App` or `ConversationManager` class.
 
 The `ConversationManager` class is responsible for managing the conversation between the user and the AI Assistant.
 It provides various methods for sending messages, handling events, and customizing the behavior of the AI Assistant.
@@ -182,13 +176,13 @@ Here are some examples of how you can extend the code with your own tools:
 Here are some examples of how you can execute the project:
 
 - Using the `--quiet` mode:
-If you want to run the AI Assistant in quiet mode, you can use the `--quiet` flag when running the `computer.py` script.
+If you want to run the AI Assistant in quiet mode, you can use the `--quiet` flag when running the `app.py` script.
 In quiet mode, the AI Assistant will not print any messages to the console, except for LLM final answer.
 ```bash
-python computer.py --quiet
+python app.py --quiet
 ```
 - Using different models:
-If you want to use a different language model than the one that is enabled by default, you can use the model name when running the `computer.py`.
+If you want to use a different language model than the one that is enabled by default, you can use the model name when running the `app.py`.
 The question pre-parser will hard match first parameters with available configuration and will change application state.
 After that application will realize that state was changed and will reload the configuration, model and agent.
 
@@ -196,7 +190,7 @@ After that application will realize that state was changed and will reload the c
 During usage, you can change models and history will be kept. So you can ask a story from one model and then switch to another model and ask for summary.
 This works only when `--once` parameter is not used.
 ```bash
-computer.py --quiet groq tell me 3 sentence story
+app.py --quiet groq tell me 3 sentence story
 > Here is a 3 sentence story: As the sun set over the Berlin skyline, a young artist named Lena sat on the banks of the Spree River, her paintbrush dancing across the canvas as she tried to capture the vibrant colors of the city. Meanwhile, a group of friends laughed and chatted as they strolled along the riverbank, enjoying the warm summer evening. In the distance, the sounds of a street performer's guitar drifted through the air, adding to the lively atmosphere of the city.
 > Master: gpt4o
 > Master: summarize the story in 1 sentence
@@ -205,7 +199,7 @@ computer.py --quiet groq tell me 3 sentence story
 
 There are also built in tools that will understand that you want to change model from the message.
 ```bash
-computer.py groq      
+app.py groq      
 phrase 'groq' detected.
 Changed model to groq
 Got 1 args: ['groq']
@@ -223,7 +217,7 @@ Thought: Do I need to use a tool? No
 AI: Model switched to gpt3. I'm ready to assist you. How can I help you today?
 
 > Finished chain.
-Computer: Model switched to gpt3. I'm ready to assist you. How can I help you today?
+Bobik: Model switched to gpt3. I'm ready to assist you. How can I help you today?
 text → gpt3 (gpt-3.5-turbo) → write
 Master: |
 ```
@@ -235,15 +229,15 @@ Same thing is implemented for:
 - turn on/off tools (agent vs no agent)
 
 ### Using the `--once` parameter:
-If you want to run the AI Assistant only once and then exit, you can use the `--once` flag when running the `computer.py` script.
+If you want to run the AI Assistant only once and then exit, you can use the `--once` flag when running the `app.py` script.
 The `--once` flag should be followed by the message that you want to send to the AI Assistant.
 ```bash
-python computer.py --once "What's the weather like today?"
+python app.py --once "What's the weather like today?"
 ```
 The `--once` parameter is useful when you want to use the AI Assistant to perform a specific task and then exit, without having to interact with it through the command line interface.
 It is good idea to combine `--once` together with `--quiet` parameter. Then you will get only answer without any additional information.
 ```bash
-cat my_code.py | ./computer.py --once --quiet Reformat given python code > my_code_reformatted.py
+cat my_code.py | ./app.py --once --quiet Reformat given python code > my_code_reformatted.py
 ```
 
 It is good idea to prepare specific model for these kind of tasks and in those tools use specialized `prompt`

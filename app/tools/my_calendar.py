@@ -11,7 +11,10 @@ class CalendarEventTool(BaseTool):
     """Tool for fetching calendar events."""
 
     name: str = "calendar_events"
-    description: str = "Use this tool to fetch upcoming calendar events. Tool have one optional argument 'date'."
+    description: str = (
+        "Use this tool to fetch upcoming calendar events. "
+        "Tool have one optional argument that can have values like 'now', 'today', 'tomorrow' or specific date in format 'YYYY-MM-DD'."
+    )
     calendar: Calendar = None
 
     def _run(
