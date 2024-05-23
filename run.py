@@ -5,6 +5,7 @@
 import warnings ; warnings.warn = lambda *args,**kwargs: None
 from app.app import App
 
+warnings.warn = lambda *args, **kwargs: None
 
 if __name__ == "__main__":
     app = App()

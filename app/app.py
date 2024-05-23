@@ -14,7 +14,6 @@ from app.pkg.beep import BeepGenerator
 from app.llm_agent import LargeLanguageModelAgent
 from app.parsers import StateTransitionParser
 
-warnings.warn = lambda *args, **kwargs: None
 load_dotenv()
 
 
