@@ -20,7 +20,10 @@ class ApplicationState:
         self.llm_model_options = None
         self.input_model_options = None
         self.output_model_options = None
+        self.reload()
 
+    def reload(self):
+        print("RELOAD MODEL")
         self.set_llm_agent_type(self.get_default_llm_agent_type())
         self.set_llm_model(self.get_default_llm())
         self.set_input_model(self.get_default_input_model())
@@ -50,8 +53,11 @@ class ApplicationState:
         self.llm_agent_type = llm_agent_type
 
     def set_llm_model(self, llm: str):
+        if llm not in self.config.settings["models"]:
+            raise ValueError(f"Model {llm} definition not found")
+
         self.llm_model = llm
-        self.llm_model_options = self.config.settings["models"].get(self.llm_model, {})
+        self.llm_model_options = self.config.settings["models"][self.llm_model]
         if "agent_type" in self.llm_model_options:
             self.set_llm_agent_type(self.llm_model_options["agent_type"])
         else:
