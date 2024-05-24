@@ -101,4 +101,8 @@ class LargeLanguageModelAgent:
 
         if isinstance(response, AIMessage):
             return response.content
-        return response["output"]
+
+        if "output" in response:
+            return response["output"]
+
+        return str(response)

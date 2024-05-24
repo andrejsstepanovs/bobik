@@ -114,7 +114,6 @@ class UserInput:
             text = input(f"{self.config.user_name}: ")
             split_text = text.split(":")
             if len(split_text) > 1:
-                print("###", )
                 clipboard_content = pyperclip.paste()
                 if clipboard_content != "" and text != clipboard_content and split_text[1].strip() in clipboard_content:
                     text = f"{text[0]}. Use clipboard."

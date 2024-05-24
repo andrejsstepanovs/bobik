@@ -1,4 +1,5 @@
 import time
+import traceback
 from app.parsers import (
     format_text,
     check_text_for_phrases,
@@ -141,6 +142,8 @@ class ConversationManager:
                 self.user_input.question_text = ""
                 break
             except Exception as e:
+                tb = traceback.format_exc()
+                print_text(state=self.state, text=tb)
                 sleep_sec = self.config.retry_settings["sleep_seconds_between_tries"]
                 print_text(state=self.state, text=f"Error processing LLM: {e}")
                 print_text(state=self.state, text=f"Sleep and try again after: {sleep_sec} sec")
