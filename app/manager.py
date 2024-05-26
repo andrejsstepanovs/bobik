@@ -144,6 +144,10 @@ class ConversationManager:
                 self.response.wait_for_audio_process()
                 self.user_input.question_text = ""
                 break
+            except KeyboardInterrupt:
+                if not self.state.is_quiet:
+                    print("OK...")
+                break
             except Exception as e:
                 tb = traceback.format_exc()
                 print_text(state=self.state, text=tb)
@@ -154,11 +158,11 @@ class ConversationManager:
                 time.sleep(sleep_sec)
 
     @staticmethod
-    def write_response(agent: LargeLanguageModelAgent, is_quiet: bool, agent_name: str, stream: bool, agent_response: str) -> str:
+    def write_response(agent: LargeLanguageModelAgent, is_quiet: bool, agent_name: str, stream: bool, agent_response) -> str:
         response = []
         if not stream:
             txt = agent.get_str(agent_response)
-            response.append(txt)
+            response.append(str(txt))
             if is_quiet:
                 print(txt)
             else:
@@ -168,7 +172,7 @@ class ConversationManager:
                 print(f"{agent_name}: ", end="")
 
             for chunk in agent.get_str(agent_response):
-                print(chunk, end="", flush=True)
-                response.append(chunk.strip(" "))
+                print(str(chunk), end="", flush=True)
+                response.append(str(chunk).strip(" "))
             print("")
         return " ".join(response)
