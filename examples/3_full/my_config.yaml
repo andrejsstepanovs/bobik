@@ -62,23 +62,6 @@ user:
   name: Master
   # timezone: UTC # optional
 models:
-  # LOCAL PROVIDERS setup example
-  ollama:
-    provider: ollama
-    model: nexusraven:latest
-    synonyms: ["private", "secure"]
-  lmstudio:
-    provider: lm_studio
-    # model value is not needed, but code requires something.
-    model: current
-    synonyms: ["local"]
-    tools_enabled: false
-  my_company:
-    provider: openai_custom
-    model: bedrock/mistral.mistral-large-2402-v1:0
-    base_url: http://localhost:1234
-    synonyms: ["local"]
-
   # EXTERNAL LLM SERVICES
   groq:
     provider: groq
@@ -121,6 +104,23 @@ models:
     # set your custom prompt. needs to be defined on top.
     prompts:
       - code
+
+  # LOCAL PROVIDERS setup example
+  ollama:
+    provider: ollama
+    model: nexusraven:latest
+    synonyms: ["private", "secure"]
+  lmstudio:
+    provider: lm_studio
+    # model value is not needed, but code requires something.
+    model: current
+    synonyms: ["local"]
+    tools_enabled: false
+  my_company:
+    provider: openai_custom
+    model: bedrock/mistral.mistral-large-2402-v1:0
+    base_url: http://localhost:1234
+    synonyms: ["local"]
 
 io_input:
   text:

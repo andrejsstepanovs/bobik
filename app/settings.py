@@ -2,18 +2,18 @@ from typing import List, Dict, Any
 from pydantic import BaseModel, validator
 
 class History(BaseModel):
-    enabled: bool
-    file: str
+    enabled: bool = False
+    file: str = "history.txt"
 
 class Agent(BaseModel):
     prompts: List[str]
-    temperature: float
-    name: str
-    max_tries: int
-    sleep_seconds_between_tries: int
-    agent_type: str
-    max_iterations: int
-    tools_enabled: bool
+    temperature: float = 0
+    name: str = "Bobik"
+    max_tries: int = 3
+    sleep_seconds_between_tries: int = 2
+    agent_type: str = "conversational-react-description"
+    max_iterations: int = 4
+    tools_enabled: bool = True
 
 class Phrases(BaseModel):
     exit: List[str]
@@ -21,15 +21,15 @@ class Phrases(BaseModel):
     no_tools: List[str]
 
 class PreParser(BaseModel):
-    enabled: bool
+    enabled: bool = True
 
 class Tool(BaseModel):
-    enabled: bool
+    enabled: bool = False
     config_file: str = None
 
 class User(BaseModel):
     location: str
-    name: str
+    name: str = "Human"
     timezone: str = None
 
 class ModelConfig(BaseModel):
@@ -84,13 +84,13 @@ class Tools(BaseModel):
         return getattr(self, name)
 
 class Settings(BaseModel):
-    prompts: Dict[str, Any]
-    history: History
     agent: Agent
-    phrases: Phrases
-    pre_parsers: PreParsers
-    tools: Tools
     user: User
+    phrases: Phrases
     models: Dict[str, ModelConfig]
     io_input: Dict[str, IOInputConfig]
     io_output: Dict[str, IOOutputConfig]
+    prompts: Dict[str, Any]
+    history: History = None
+    pre_parsers: PreParsers = None
+    tools: Tools = None

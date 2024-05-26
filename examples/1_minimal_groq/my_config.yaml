@@ -7,26 +7,14 @@ prompts:
 history:
   enabled: false
 agent:
-  prompts:
-    - default
-  temperature: 0
-  name: Bobik
-  max_tries: 3
-  sleep_seconds_between_tries: 2
-  agent_type: conversational-react-description
-  max_iterations: 4
-  tools_enabled: true
+  name: "Bobik"
+  prompts: ["default"]
 phrases:
-  exit:
-    - q
-    - exit
-  with_tools:
-    - agent
-  no_tools:
-    - llm
+  exit: ["q", "exit"]
+  with_tools: ["agent"]
+  no_tools: ["llm"]
 user:
   location: Germany, Berlin
-  name: Master
 models:
   groq:
     provider: groq
