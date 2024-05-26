@@ -1,6 +1,4 @@
 import os
-import inspect
-from langchain_core.messages import AIMessage
 from langchain_core.exceptions import OutputParserException
 from langchain.memory import ConversationBufferMemory
 from app.config import Configuration
@@ -110,19 +108,3 @@ class LargeLanguageModelAgent:
         if stream:
             return self.chain.stream(text)
         return self.model.invoke(text)
-
-    def get_str(self, response):
-        if inspect.isgenerator(response) or inspect.isgeneratorfunction(response):
-            for chunk in response:
-                yield self.response_to_str(chunk)
-
-        return self.response_to_str(response)
-
-    def response_to_str(self, response):
-        if isinstance(response, AIMessage):
-            return response.content
-
-        if "output" in response:
-            return response["output"]
-
-        return str(response)

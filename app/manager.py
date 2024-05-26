@@ -18,6 +18,11 @@ from app.pkg.beep import BeepGenerator
 from app.llm_provider import LanguageModelProvider
 from app.io_input import UserInput
 from app.my_print import print_text
+import inspect
+from langchain_core.messages import AIMessage
+from langchain_core.messages import BaseMessage
+from langchain_core.messages.ai import AIMessage as AIMessage2
+from langchain_core.messages.ai import BaseMessage as BaseMessage2
 
 
 class ConversationManager:
@@ -68,7 +73,7 @@ class ConversationManager:
                 file.write(content+"\n")
 
     def pre_parse_question(self) -> tuple[bool, bool]:
-        if self.user_input.question_text == "":
+        if self.user_input.question_text.strip() == "":
             return False, False
 
         state_changed, stop = self.parser.quick_state_change(self.user_input.question_text)
@@ -161,8 +166,8 @@ class ConversationManager:
     def write_response(agent: LargeLanguageModelAgent, is_quiet: bool, agent_name: str, stream: bool, agent_response) -> str:
         response = []
         if not stream:
-            txt = agent.get_str(agent_response)
-            response.append(str(txt))
+            txt = response_to_str(response=agent_response)
+            response.append(txt)
             if is_quiet:
                 print(txt)
             else:
@@ -171,8 +176,21 @@ class ConversationManager:
             if not is_quiet:
                 print(f"{agent_name}: ", end="")
 
-            for chunk in agent.get_str(agent_response):
-                print(str(chunk), end="", flush=True)
+            for chunk in agent_response:
+                print(response_to_str(response=chunk), end="", flush=True)
                 response.append(str(chunk).strip(" "))
             print("")
         return " ".join(response)
+
+
+def response_to_str(response) -> str:
+    if isinstance(response, BaseMessage):
+        return response.content
+
+    if "output" in response:
+        return response["output"]
+
+    if len(response) != len(str(response)):
+        raise ValueError(f"Unknown response type: {type(response)}")
+
+    return response

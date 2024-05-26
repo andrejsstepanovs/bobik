@@ -169,4 +169,5 @@ my_history.txt
 my_calendar.yaml
 prompts/*
 !prompts/system_prompt.txt
+!prompts/code_prompt.txt
 calendar_cache.pkl

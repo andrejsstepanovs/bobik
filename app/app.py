@@ -77,6 +77,78 @@ class App:
         )
         return self.manager
 
+    def print_help(self):
+        print("Usage: run.py [--once or --quit] [--quiet] [pre-parser commands] [question]")
+        print("")
+        print("Available pre-parser commands:")
+        print("  Switch between agent and normal mode.")
+        print("  With agent:")
+        for phrase in self.config.with_tools_phrases:
+            print(f"    - {phrase}")
+        print("")
+        print("  No agent:")
+        for phrase in self.config.no_tools_phrases:
+            print(f"    - {phrase}")
+        print("  ")
+        print("  Quit:")
+        for phrase in self.config.exit_phrases:
+            print(f"    - {phrase}")
+        print("")
+        print("  Select model by typing its name.")
+        print("  Available models:")
+
+        for model_name, model_config in self.config.settings["models"].items():
+            if 'model' not in model_config or model_config['model'] is None or model_config['model'] == "":
+                continue
+            if model_config['provider'] == "google" and self.config.google_settings["api_key"] is None:
+                continue
+            if model_config['provider'] == "mistral" and self.config.mistral_settings["api_key"] is None:
+                continue
+            if model_config['provider'] == "groq" and self.config.groq_settings["api_key"] is None:
+                continue
+            if model_config['provider'] == "openai" and self.config.openai_settings["api_key"] is None:
+                continue
+            if model_config['provider'] == "openai_custom" and (self.config.openai_settings["api_key"] is None or self.config.custom_provider_settings["base_url"] is None):
+                continue
+            if model_config['provider'] == "lm_studio" and self.config.lmstudio_provider_settings["base_url"] is None:
+                continue
+            if model_config['provider'] == "ollama" and ("enabled" not in self.config.ollama_settings or self.config.ollama_settings["enabled"]):
+                continue
+            print(f"    - {model_name} ({model_config['provider']} / {model_config['model']})")
+        print("")
+        print("  Available Input methods:")
+        for model_name, model_config in self.config.settings["io_input"].items():
+            if model_config['provider'] == "deepgram_settings" and self.config.deepgram_settings["api_key"] is None:
+                continue
+            print(f"    - {model_name} ({model_config['provider']} / {'model' in model_config and model_config['model'] or 'None'})")
+        print("")
+        print("  Available Output methods:")
+        for model_name, model_config in self.config.settings["io_output"].items():
+            if model_config['provider'] == "deepgram_settings" and self.config.deepgram_settings["api_key"] is None:
+                continue
+            print(f"    - {model_name} ({model_config['provider']} / {'model' in model_config and model_config['model'] or 'None'})")
+        print("")
+        print("  Examples:")
+        print("  - python run.py --once --quit What is the capital of France")
+        print("  - python run.py --once --quit llm speak What is the capital of France")
+        print("  - echo \"what is capital of France?\" | python run.py --once --quiet llm speak")
+        print("  - echo \"What is capital of France? Answer with 1 word.\" | python run.py --once --quiet llm")
+        print("  - echo \"What is capital of France? Answer with 1 word.\" | python run.py --once --quiet llm > France.txt")
+        print("  - cat file.py | python run.py --once --quiet code add comments to the code. Answer only with code. > file.py")
+        print("  - # example of model switching")
+        print("  - python run.py")
+        print("  - > Tell me a story.")
+        print("  - > gpt3")
+        print("  - > summarize the story")
+        print("  - > quit")
+        print("  - # example of model and agent switching")
+        print("  - python run.py llm groq")
+        print("  - > Tell me a story.")
+        print("  - > gpt3")
+        print("  - > agent")
+        print("  - > summarize the story")
+        print("  - > quit")
+
     def process_arguments(self) -> tuple[bool, bool, str]:
         first_question = ""
         initial_arg_phrases = sys.argv[1:]
@@ -87,9 +159,12 @@ class App:
             i = 0
             """It is important to use these flags before any following command parameters!"""
             for phrase in initial_arg_phrases:
-                if phrase == "--once":
+                if phrase == "--once" or phrase == "--quit":
                     loop = False
                     i += 1
+                elif phrase == "--help":
+                    self.print_help()
+                    quit(0)
                 elif phrase == "--quiet":
                     quiet = True
                     self.state.is_quiet = quiet

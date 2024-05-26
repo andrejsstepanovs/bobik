@@ -50,7 +50,7 @@ class LanguageModelProvider:
                 openai_api_key=self.config.openai_settings["api_key"],
             )
 
-        if provider_name == "openai_custom" and self.config.openai_settings["api_key"] is not None:
+        if provider_name == "openai_custom" and self.config.custom_provider_settings["api_key"] is not None and self.config.custom_provider_settings["base_url"] is not None:
             token = self.config.custom_provider_settings["api_key"]
             model = ChatOpenAI(
                 model=model_name,
