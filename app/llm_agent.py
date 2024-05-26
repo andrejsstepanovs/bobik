@@ -1,4 +1,5 @@
 import os
+import inspect
 from langchain_core.messages import AIMessage
 from langchain_core.exceptions import OutputParserException
 from langchain.memory import ConversationBufferMemory
@@ -10,6 +11,8 @@ from app.llm_provider import LanguageModelProvider
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import BaseMessageChunk
 from typing import Iterator
+from langchain_core.runnables.utils import AddableDict
+from langchain.agents.agent import AgentExecutor
 from langchain.chains import ConversationChain
 from langchain_core.memory import BaseMemory
 from langchain.chains.question_answering import load_qa_chain
@@ -84,7 +87,7 @@ class LargeLanguageModelAgent:
                 return "Check last answer and fix it to comply with Action/Action Input syntax!"
             return str(error)
 
-        self.agent = initialize_agent(
+        self.agent: AgentExecutor = initialize_agent(
             agent=self.state.llm_agent_type,
             llm=self.model,
             tools=self.tools,
@@ -98,21 +101,27 @@ class LargeLanguageModelAgent:
             max_execution_time=None,
         )
 
-    def ask_question(self, text: str, stream: bool = False) -> tuple[str, Iterator[BaseMessageChunk]]:
+    def ask_question(self, text: str, stream: bool = False):
         if self.state.are_tools_enabled:
-            params = {"input": text}
-            # if stream:
-            #     return None, self.agent.stream(input=params)
-            response = self.agent.invoke(input=params)
-        else:
             if stream:
-                return None, self.chain.stream(text)
-            response = self.model.invoke(text)
+                return self.agent.stream(input={"input": text})
+            return self.agent.invoke(input={"input": text})
 
+        if stream:
+            return self.chain.stream(text)
+        return self.model.invoke(text)
+
+    def get_str(self, response):
+        if inspect.isgenerator(response):
+            for chunk in response:
+                yield self.response_to_str(chunk)
+        return self.response_to_str(response)
+
+    def response_to_str(self, response):
         if isinstance(response, AIMessage):
-            return response.content, None
+            return response.content
 
         if "output" in response:
-            return response["output"], None
+            return response["output"]
 
-        return str(response), None
+        return str(response)

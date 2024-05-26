@@ -8,7 +8,6 @@ from app.parsers import (
     CurrentTimeAndDateParser,
     StateTransitionParser,
 )
-from langchain_core.runnables.utils import AddableDict
 from app.tool_loader import ToolLoader
 from app.config import Configuration
 from app.state import ApplicationState
@@ -125,26 +124,33 @@ class ConversationManager:
         tries = 0
         while tries < self.config.retry_settings["max_tries"]:
             try:
-                stream = not self.state.are_tools_enabled and not self.state.is_quiet
-                agent_response, response_stream = self.agent.ask_question(text=self.user_input.question_text, stream=stream)
+                stream = not self.state.is_quiet
+                agent_response = self.agent.ask_question(text=self.user_input.question_text, stream=stream)
+
+                response = []
                 if not stream:
+                    txt = self.agent.get_str(agent_response)
+                    response.append(txt)
                     if self.state.is_quiet:
-                        print(agent_response)
+                        print(txt)
                     else:
-                        print(f"{self.config.agent_name}: {agent_response}")
+                        print(f"{self.config.agent_name}: {txt}")
                 else:
                     if not self.state.is_quiet:
                         print(f"{self.config.agent_name}: ", end="")
-                    for chunk in response_stream:
+
+                    for chunk in self.agent.get_str(agent_response):
                         print(chunk, end="", flush=True)
+                        response.append(chunk)
                     print("")
 
                 if self.state.is_stopped:
                     break
 
-                self.add_text_to_file(self.config.agent_name, agent_response)
+                response_text = " ".join(response)
+                self.add_text_to_file(self.config.agent_name, response_text)
 
-                self.response.respond(agent_response)
+                self.response.respond(response_text)
 
                 self.response.wait_for_audio_process()
 
