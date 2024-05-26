@@ -109,6 +109,16 @@ class StateTransitionParser:
             print_text(state=self.state, text=f"Changed model to {self.state.llm_model}")
             return True, False
 
+        if check_text_for_phrases(state=self.state, phrases=self.config.no_tools_phrases, question=question):
+            print_text(state=self.state, text="No Tools")
+            self.state.are_tools_enabled = False
+            return True, False
+
+        if check_text_for_phrases(state=self.state, phrases=self.config.with_tools_phrases, question=question):
+            print_text(state=self.state, text="With Tools (Agent)")
+            self.state.are_tools_enabled = True
+            return True, False
+
         if check_text_for_phrases(state=self.state, phrases=self.config.exit_phrases, question=question):
             print_text(state=self.state, text="Exiting conversation")
             self.state.stop = True

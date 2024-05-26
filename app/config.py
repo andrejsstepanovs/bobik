@@ -79,4 +79,7 @@ class Configuration:
             self.prompt_replacements["timezone"] = self.settings["user"]["timezone"]
 
         self.exit_phrases = self.settings["phrases"]["exit"]
+        self.no_tools_phrases = self.settings["phrases"]["no_tools"]
+        self.with_tools_phrases = self.settings["phrases"]["with_tools"]
+
         self.log_level = logging.ERROR

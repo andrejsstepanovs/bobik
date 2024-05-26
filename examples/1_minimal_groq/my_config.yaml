@@ -20,6 +20,10 @@ phrases:
   exit:
     - q
     - exit
+  with_tools:
+    - agent
+  no_tools:
+    - llm
 user:
   location: Germany, Berlin
   name: Master

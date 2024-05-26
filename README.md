@@ -19,6 +19,7 @@ Features:
 -- model switching
 -- input switching
 -- output switching
+-- agent/llm switching
 -- enable / disable agent mode
 -- reset memory
 -- enable / disable tools
