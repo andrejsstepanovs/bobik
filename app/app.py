@@ -13,6 +13,7 @@ from app.tool_loader import ToolLoader
 from app.pkg.beep import BeepGenerator
 from app.llm_agent import LargeLanguageModelAgent
 from app.parsers import StateTransitionParser
+from app.pkg.history import ConversationHistory
 
 load_dotenv()
 
@@ -28,6 +29,7 @@ class App:
         self.tool_provider = None
         self.config = None
         self.state = None
+        self.history = ConversationHistory()
 
     def load_config_and_state(self):
         self.options = self.load_options()
@@ -68,6 +70,7 @@ class App:
             parser=self.state_change_parser,
             config=self.config,
             state=self.state,
+            history=self.history,
             provider=self.llm_provider,
             tool_loader=self.tool_provider,
             agent=self.llm_agent,

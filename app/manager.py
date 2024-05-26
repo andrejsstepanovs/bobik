@@ -18,6 +18,7 @@ from app.pkg.beep import BeepGenerator
 from app.llm_provider import LanguageModelProvider
 from app.io_input import UserInput
 from app.my_print import print_text
+from app.pkg.history import ConversationHistory
 
 
 class ConversationManager:
@@ -27,6 +28,7 @@ class ConversationManager:
             state: ApplicationState,
             agent: LargeLanguageModelAgent,
             provider: LanguageModelProvider,
+            history: ConversationHistory,
             collector: Transcript,
             tool_loader: ToolLoader,
             parser: StateTransitionParser,
@@ -40,6 +42,7 @@ class ConversationManager:
         self.tool_loader = tool_loader
         self.config = config
         self.state = state
+        self.history = history
         self.collector = collector
         self.response = response
         self.current_state_hash = None
@@ -56,7 +59,10 @@ class ConversationManager:
 
         return self.agent
 
-    def add_text_to_file(self, who, text):
+    def add_text_to_history(self, who, text):
+        if not self.state.are_tools_enabled:
+            self.history.add_message(f"{who}: {text}")
+
         if self.config.history_file is not None and self.config.history_file != "":
             with open(self.config.history_file, "a") as file:
                 datetime = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -88,7 +94,7 @@ class ConversationManager:
                     self.user_input.question_text = out
 
         if input_was_changed:
-            self.add_text_to_file("Question pre-parser", self.user_input.question_text)
+            self.add_text_to_history("Question pre-parser", self.user_input.question_text)
 
         return False, False
 
@@ -113,7 +119,7 @@ class ConversationManager:
         else:
             await self.user_input.get_input()
 
-        self.add_text_to_file(self.config.user_name, self.user_input.question_text)
+        self.add_text_to_history(self.config.user_name, self.user_input.question_text)
         proceed, stop = self.pre_parse_question()
         self.reload_agent(force=proceed)
         if proceed:
@@ -125,11 +131,17 @@ class ConversationManager:
         while tries < self.config.retry_settings["max_tries"]:
             try:
                 stream = not self.state.is_quiet
-                response = self.agent.ask_question(text=self.user_input.question_text, stream=stream)
+                text = self.user_input.question_text
+
+                # no agent mode history feature in langchain don't work. It is there, but dont work. Prepending history manually.
+                if not self.state.are_tools_enabled and self.history.size() > 0:
+                    text = str(self.history) + "\n" + text
+
+                response = self.agent.ask_question(text=text, stream=stream)
                 response_text = self.write_response(agent_name=self.config.agent_name, stream=stream, agent_response=response, agent=self.agent, is_quiet=self.state.is_quiet)
                 if self.state.is_stopped:
                     break
-                self.add_text_to_file(self.config.agent_name, response_text)
+                self.add_text_to_history(self.config.agent_name, response_text)
                 self.response.respond(response_text)
                 self.response.wait_for_audio_process()
                 self.user_input.question_text = ""
