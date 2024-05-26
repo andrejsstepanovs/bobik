@@ -23,7 +23,6 @@ class ApplicationState:
         self.reload()
 
     def reload(self):
-        print("RELOAD MODEL")
         self.set_llm_agent_type(self.get_default_llm_agent_type())
         self.set_llm_model(self.get_default_llm())
         self.set_input_model(self.get_default_input_model())

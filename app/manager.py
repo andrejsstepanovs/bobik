@@ -8,6 +8,7 @@ from app.parsers import (
     CurrentTimeAndDateParser,
     StateTransitionParser,
 )
+from langchain_core.runnables.utils import AddableDict
 from app.tool_loader import ToolLoader
 from app.config import Configuration
 from app.state import ApplicationState
@@ -124,11 +125,19 @@ class ConversationManager:
         tries = 0
         while tries < self.config.retry_settings["max_tries"]:
             try:
-                agent_response = self.agent.ask_question(self.user_input.question_text)
-                if self.state.is_quiet:
-                    print(agent_response)
+                stream = not self.state.are_tools_enabled and not self.state.is_quiet
+                agent_response, response_stream = self.agent.ask_question(text=self.user_input.question_text, stream=stream)
+                if not stream:
+                    if self.state.is_quiet:
+                        print(agent_response)
+                    else:
+                        print(f"{self.config.agent_name}: {agent_response}")
                 else:
-                    print(f"{self.config.agent_name}: {agent_response}")
+                    if not self.state.is_quiet:
+                        print(f"{self.config.agent_name}: ", end="")
+                    for chunk in response_stream:
+                        print(chunk, end="", flush=True)
+                    print("")
 
                 if self.state.is_stopped:
                     break

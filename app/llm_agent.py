@@ -7,6 +7,9 @@ from app.state import ApplicationState
 from langchain.agents import initialize_agent
 from app.tool_loader import ToolLoader
 from app.llm_provider import LanguageModelProvider
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.messages import BaseMessageChunk
+from typing import Iterator
 from langchain.chains import ConversationChain
 from langchain_core.memory import BaseMemory
 from langchain.chains.question_answering import load_qa_chain
@@ -30,6 +33,7 @@ class LargeLanguageModelAgent:
         self.agent = None
         self.memory = None
         self.model = None
+        self.chain = None
         self.prompt = None
 
     def load_memory(self, force: bool = False):
@@ -67,8 +71,9 @@ class LargeLanguageModelAgent:
         self.initialize_prompt()
 
         self.model = self.llm_provider.get_model()
-
-        if self.state.are_tools_enabled:
+        if not self.state.are_tools_enabled:
+            self.chain = self.model | StrOutputParser()
+        else:
             self.function_provider.set_memory(self.memory)
             self.tools = self.function_provider.get_tools()
             self.reload_agent()
@@ -93,16 +98,21 @@ class LargeLanguageModelAgent:
             max_execution_time=None,
         )
 
-    def ask_question(self, text) -> str:
+    def ask_question(self, text: str, stream: bool = False) -> tuple[str, Iterator[BaseMessageChunk]]:
         if self.state.are_tools_enabled:
-            response = self.agent.invoke(input={"input": text})
+            params = {"input": text}
+            # if stream:
+            #     return None, self.agent.stream(input=params)
+            response = self.agent.invoke(input=params)
         else:
+            if stream:
+                return None, self.chain.stream(text)
             response = self.model.invoke(text)
 
         if isinstance(response, AIMessage):
-            return response.content
+            return response.content, None
 
         if "output" in response:
-            return response["output"]
+            return response["output"], None
 
-        return str(response)
+        return str(response), None
