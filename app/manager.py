@@ -125,35 +125,13 @@ class ConversationManager:
         while tries < self.config.retry_settings["max_tries"]:
             try:
                 stream = not self.state.is_quiet
-                agent_response = self.agent.ask_question(text=self.user_input.question_text, stream=stream)
-
-                response = []
-                if not stream:
-                    txt = self.agent.get_str(agent_response)
-                    response.append(txt)
-                    if self.state.is_quiet:
-                        print(txt)
-                    else:
-                        print(f"{self.config.agent_name}: {txt}")
-                else:
-                    if not self.state.is_quiet:
-                        print(f"{self.config.agent_name}: ", end="")
-
-                    for chunk in self.agent.get_str(agent_response):
-                        print(chunk, end="", flush=True)
-                        response.append(chunk)
-                    print("")
-
+                response = self.agent.ask_question(text=self.user_input.question_text, stream=stream)
+                response_text = self.write_response(agent_name=self.config.agent_name, stream=stream, agent_response=response, agent=self.agent, is_quiet=self.state.is_quiet)
                 if self.state.is_stopped:
                     break
-
-                response_text = " ".join(response)
                 self.add_text_to_file(self.config.agent_name, response_text)
-
                 self.response.respond(response_text)
-
                 self.response.wait_for_audio_process()
-
                 self.user_input.question_text = ""
                 break
             except Exception as e:
@@ -164,3 +142,23 @@ class ConversationManager:
                 print_text(state=self.state, text=f"Sleep and try again after: {sleep_sec} sec")
                 tries += 1
                 time.sleep(sleep_sec)
+
+    @staticmethod
+    def write_response(agent: LargeLanguageModelAgent, is_quiet: bool, agent_name: str, stream: bool, agent_response: str) -> str:
+        response = []
+        if not stream:
+            txt = agent.get_str(agent_response)
+            response.append(txt)
+            if is_quiet:
+                print(txt)
+            else:
+                print(f"{agent_name}: {txt}")
+        else:
+            if not is_quiet:
+                print(f"{agent_name}: ", end="")
+
+            for chunk in agent.get_str(agent_response):
+                print(chunk, end="", flush=True)
+                response.append(chunk)
+            print("")
+        return " ".join(response)
