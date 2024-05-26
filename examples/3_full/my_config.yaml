@@ -32,7 +32,7 @@ phrases:
     - no_tools
     - no-agent
     - no_agent
-pre-parsers:
+pre_parsers:
   # clipboard tool will add your active clipboard text on top of the question. Make sure word `clipboard` is part of question for this to happen.
   # example question: "Summarize my clipboard"
   clipboard: { enabled: true }

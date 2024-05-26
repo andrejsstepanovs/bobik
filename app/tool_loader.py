@@ -72,9 +72,9 @@ class ToolLoader:
         return tools
 
     def is_tool_enabled(self, name: str) -> bool:
-        if "tools" not in self.config.settings:
+        if self.config.settings.tools is None:
             return False
-        return bool(self.config.settings["tools"].get(name, {}).get("enabled"))
+        return bool(self.config.settings.tools.get(name).enabled)
 
     def add_bing_search_tool(self, tools: list):
         if self.is_tool_enabled("bing_search") and self.config.bing_settings["subscription_key"] is not None:
@@ -103,7 +103,7 @@ class ToolLoader:
 
     def add_my_calendar_tool(self, tools: list):
         if self.is_tool_enabled("ics_calendar"):
-            calendar_config_file = self.config.settings["tools"]["ics_calendar"]["config_file"]
+            calendar_config_file = self.config.settings.tools.ics_calendar.config_file
             if not os.path.exists(calendar_config_file):
                 raise FileNotFoundError(f"File {calendar_config_file} not found")
 

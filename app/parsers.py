@@ -96,15 +96,15 @@ class StateTransitionParser:
             print_text(state=self.state, text="Changed to text mode")
             return True, False
 
-        if check_text_for_phrases(state=self.state, phrases=self.config.settings["io_input"].keys(), question=question):
+        if check_text_for_phrases(state=self.state, phrases=self.config.settings.io_input.keys(), question=question):
             self.state.set_input_model(question)
             return True, False
 
-        if check_text_for_phrases(state=self.state, phrases=self.config.settings["io_output"].keys(), question=question):
+        if check_text_for_phrases(state=self.state, phrases=self.config.settings.io_output.keys(), question=question):
             self.state.set_output_model(question)
             return True, False
 
-        if check_text_for_phrases(state=self.state, phrases=self.config.settings["models"].keys(), question=question):
+        if check_text_for_phrases(state=self.state, phrases=self.config.settings.models.keys(), question=question):
             self.state.set_llm_model(question)
             print_text(state=self.state, text=f"Changed model to {self.state.llm_model}")
             return True, False

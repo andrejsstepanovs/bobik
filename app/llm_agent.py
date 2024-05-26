@@ -95,7 +95,7 @@ class LargeLanguageModelAgent:
             early_stopping_method="generate",
             memory=self.memory,
             tool_choice="any",
-            max_iterations=self.config.settings["agent"]["max_iterations"],
+            max_iterations=self.config.settings.agent.max_iterations,
             max_execution_time=None,
         )
 

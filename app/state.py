@@ -52,66 +52,64 @@ class ApplicationState:
         self.llm_agent_type = llm_agent_type
 
     def set_llm_model(self, llm: str):
-        if llm not in self.config.settings["models"]:
+        if llm not in self.config.settings.models:
             raise ValueError(f"Model {llm} definition not found")
 
         self.llm_model = llm
-        self.llm_model_options = self.config.settings["models"][self.llm_model]
-        if "agent_type" in self.llm_model_options:
-            self.set_llm_agent_type(self.llm_model_options["agent_type"])
+        self.llm_model_options = self.config.settings.models[self.llm_model]
+        if self.llm_model_options.agent_type is not None:
+            self.set_llm_agent_type(self.llm_model_options.agent_type)
         else:
             self.set_llm_agent_type(self.get_default_llm_agent_type())
 
-        if "temperature" in self.llm_model_options:
-            self.temperature = self.llm_model_options["temperature"]
+        if self.llm_model_options.temperature is not None:
+            self.temperature = self.llm_model_options.temperature
         else:
             self.temperature = self.get_default_temperature()
 
-        if "tools_enabled" in self.llm_model_options:
-            self.are_tools_enabled = self.llm_model_options["tools_enabled"]
+        if self.llm_model_options.tools_enabled is not None:
+            self.are_tools_enabled = self.llm_model_options.tools_enabled
         else:
             self.are_tools_enabled = self.get_default_tools_are_enabled()
 
         self.prompts = []
-        if "prompts" in self.llm_model_options:
-            self.set_prompts(self.llm_model_options["prompts"])
+        if self.llm_model_options.prompts is not None:
+            self.set_prompts(self.llm_model_options.prompts)
         else:
-            self.set_prompts(self.config.settings["agent"]["prompts"])
+            self.set_prompts(self.config.settings.agent.prompts)
 
     def set_input_model(self, model: str):
         self.input_model = model
-        self.input_model_options = self.config.settings["io_input"].get(self.input_model, {})
+        self.input_model_options = self.config.settings.io_input.get(self.input_model)
 
     def set_output_model(self, model: str):
         self.output_model = model
-        self.output_model_options = self.config.settings["io_output"].get(self.output_model, {})
+        self.output_model_options = self.config.settings.io_output.get(self.output_model)
 
     def get_default_llm(self) -> str:
-        for model, options in self.config.settings["models"].items():
+        for model, options in self.config.settings.models.items():
             return model
 
     def get_default_input_model(self) -> str:
-        for model, options in self.config.settings["io_input"].items():
-            return model
+        return "text"
 
     def get_default_output_model(self) -> str:
-        for model, options in self.config.settings["io_output"].items():
-            return model
+        return "write"
 
     def get_default_llm_agent_type(self) -> str:
-        if "agent_type" in self.config.settings["agent"]:
-            return self.config.settings["agent"]["agent_type"]
+        if self.config.settings.agent.agent_type is not None:
+            return self.config.settings.agent.agent_type
         return AgentType.CONVERSATIONAL_REACT_DESCRIPTION
 
     def get_default_tools_are_enabled(self) -> bool:
-        if "tools_enabled" in self.config.settings["agent"]:
-            return self.config.settings["agent"]["tools_enabled"]
+        if self.config.settings.agent.tools_enabled is not None:
+            return self.config.settings.agent.tools_enabled
         return True
 
     def get_default_temperature(self):
-        if "temperature" in self.config.settings["agent"]:
-            return self.config.settings["agent"]["temperature"]
+        if self.config.settings.agent.temperature is not None:
+            return self.config.settings.agent.temperature
         return 0
 
     def load_llm_options(self) -> dict:
-        return self.config.settings["models"].get(self.llm_model, {})
+        return self.config.settings.models.get(self.llm_model)

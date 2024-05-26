@@ -2,20 +2,21 @@ import os
 import logging
 import time
 import datetime
+from app.settings import Settings
 
 
 class Configuration:
-    def __init__(self, settings: dict):
+    def __init__(self, settings: Settings):
         self.settings = settings
 
-        self.user_name = self.settings["user"]["name"]
-        self.agent_temperature = self.settings["agent"]["temperature"]
-        self.agent_name = self.settings["agent"]["name"]
+        self.user_name = self.settings.user.name
+        self.agent_temperature = self.settings.agent.temperature
+        self.agent_name = self.settings.agent.name
         self.directory = os.path.dirname(os.path.realpath(__file__))
 
         self.history_file = None
-        if self.settings["history"]["enabled"]:
-            self.history_file = self.settings["history"]["file"]
+        if self.settings.history.enabled:
+            self.history_file = self.settings.history.file
 
         self.deepgram_settings = {
             "url": "https://api.deepgram.com/v1/",
@@ -55,12 +56,12 @@ class Configuration:
             }
         }
         self.retry_settings = {
-            "max_tries": self.settings["agent"]["max_tries"],
-            "sleep_seconds_between_tries": self.settings["agent"]["sleep_seconds_between_tries"],
+            "max_tries": self.settings.agent.max_tries,
+            "sleep_seconds_between_tries": self.settings.agent.sleep_seconds_between_tries,
         }
         self.available_prompts = {}
-        if len(self.settings["prompts"]) > 0:
-            for name, file in self.settings["prompts"].items():
+        if len(self.settings.prompts) > 0:
+            for name, file in self.settings.prompts.items():
                 if not os.path.exists(file):
                     file = os.path.join(self.directory, "..", "prompts", file)
                     if not os.path.exists(file):
@@ -73,13 +74,13 @@ class Configuration:
             "date": time.strftime("%Y-%m-%d"),
             "time": time.strftime("%H:%M:%S"),
             "timezone": str(datetime.datetime.now(datetime.timezone(datetime.timedelta(0))).astimezone().tzinfo),
-            "location": self.settings["user"]["location"],
+            "location": self.settings.user.location,
         }
-        if "timezone" in self.settings["user"]:
-            self.prompt_replacements["timezone"] = self.settings["user"]["timezone"]
+        if self.settings.user.timezone is not None:
+            self.prompt_replacements["timezone"] = self.settings.user.timezone
 
-        self.exit_phrases = self.settings["phrases"]["exit"]
-        self.no_tools_phrases = self.settings["phrases"]["no_tools"]
-        self.with_tools_phrases = self.settings["phrases"]["with_tools"]
+        self.exit_phrases = self.settings.phrases.exit
+        self.no_tools_phrases = self.settings.phrases.no_tools
+        self.with_tools_phrases = self.settings.phrases.with_tools
 
         self.log_level = logging.ERROR

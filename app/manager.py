@@ -8,6 +8,7 @@ from app.parsers import (
     CurrentTimeAndDateParser,
     StateTransitionParser,
 )
+from langchain_core.runnables.utils import AddableDict
 from app.tool_loader import ToolLoader
 from app.config import Configuration
 from app.state import ApplicationState
@@ -82,14 +83,14 @@ class ConversationManager:
 
         input_was_changed = False
         if "pre-parsers" in self.config.settings:
-            if "clipboard" in self.config.settings["pre-parsers"] and self.config.settings["pre-parsers"]["clipboard"]["enabled"]:
+            if self.config.settings.pre_parsers.clipboard.enabled:
                 if check_text_for_phrases(state=self.state, contains=True, phrases=["clipboard"], question=self.user_input.question_text):
                     changed, out = ClipboardContentParser().parse(self.user_input.question_text)
                     if changed:
                         input_was_changed = True
                         self.user_input.question_text = out
 
-            if "time" in self.config.settings["pre-parsers"] and self.config.settings["pre-parsers"]["time"]["enabled"]:
+            if self.config.settings.pre_parsers.time.enabled:
                 time_parser = CurrentTimeAndDateParser(timezone=self.config.prompt_replacements["timezone"], state=self.state)
                 changed, out = time_parser.parse(self.user_input.question_text)
                 if changed:
@@ -109,7 +110,7 @@ class ConversationManager:
                 break
 
     async def question_answer(self, first_question: str = "") -> bool:
-        print_text(state=self.state, text=f"\033[93m{self.state.input_model}\033[0m → \033[91;1;4m{self.state.llm_model}\033[0m ({self.state.llm_model_options['model']}) → \033[93m{self.state.output_model}\033[0m")
+        print_text(state=self.state, text=f"\033[93m{self.state.input_model}\033[0m → \033[91;1;4m{self.state.llm_model}\033[0m ({self.state.llm_model_options.model}) → \033[93m{self.state.output_model}\033[0m")
 
         if first_question != "":
             trimmed_first_question = first_question
@@ -166,7 +167,7 @@ class ConversationManager:
     def write_response(agent: LargeLanguageModelAgent, is_quiet: bool, agent_name: str, stream: bool, agent_response) -> str:
         response = []
         if not stream:
-            txt = response_to_str(response=agent_response)
+            txt = response_to_str(response=agent_response, is_quiet=is_quiet)
             response.append(txt)
             if is_quiet:
                 print(txt)
@@ -177,15 +178,26 @@ class ConversationManager:
                 print(f"{agent_name}: ", end="")
 
             for chunk in agent_response:
-                print(response_to_str(response=chunk), end="", flush=True)
+                print(response_to_str(response=chunk, is_quiet=is_quiet), end="", flush=True)
                 response.append(str(chunk).strip(" "))
             print("")
         return " ".join(response)
 
 
-def response_to_str(response) -> str:
+def response_to_str(response, is_quiet: bool) -> str:
     if isinstance(response, BaseMessage):
         return response.content
+    if isinstance(response, AddableDict):
+        if "output" not in response:
+            if "steps" in response:
+                if not is_quiet:
+                    return "\nThinking..."
+                else:
+                    return ""
+            if not is_quiet:
+                return "\nUnknown..."
+            else:
+                return ""
 
     if "output" in response:
         return response["output"]

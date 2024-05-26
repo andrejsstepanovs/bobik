@@ -52,7 +52,7 @@ class TextToSpeech:
             self.speak(text)
 
     def speak(self, text: str):
-        if self.state.output_model_options["provider"] == "deepgram":
+        if self.state.output_model_options.provider == "deepgram":
             if self.config.deepgram_settings["api_key"] is None:
                 raise ValueError("Deepgram API key not found.")
 
@@ -89,10 +89,10 @@ class TextToSpeech:
                 }
                 # Call Deepgram API to get audio stream.
                 url = self.config.deepgram_settings['url']+"speak?" + urllib.parse.urlencode({
-                    "model": self.state.output_model_options["model"],
-                    "performance": self.state.output_model_options["performance"],
-                    "encoding": self.state.output_model_options["encoding"],
-                    "sample_rate": self.state.output_model_options["sample_rate"],
+                    "model": self.state.output_model_options.model,
+                    "performance": self.state.output_model_options.performance,
+                    "encoding": self.state.output_model_options.encoding,
+                    "sample_rate": self.state.output_model_options.sample_rate,
                 })
 
                 with requests.post(url, stream=True, headers=headers, json={"text": text}) as r:

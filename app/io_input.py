@@ -23,7 +23,7 @@ from app.my_print import print_text
 
 
 async def listen_to_input(config: Configuration, state: ApplicationState, transcript_collector: Transcript, callback):
-    if state.input_model_options["provider"] == "deepgram":
+    if state.input_model_options.provider == "deepgram":
         if config.deepgram_settings["api_key"] is None:
             raise Exception("Deepgram API key not set")
 
@@ -58,14 +58,14 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
             deepgram_connection.on(LiveTranscriptionEvents.Transcript, on_message)
 
             options = LiveOptions(
-                model=state.input_model_options["model"],
-                punctuate=state.input_model_options["punctuate"],
-                language=state.input_model_options["language"],
-                encoding=state.input_model_options["encoding"],
-                channels=state.input_model_options["channels"],
-                sample_rate=state.input_model_options["sample_rate"],
-                endpointing=state.input_model_options["endpointing"],
-                smart_format=state.input_model_options["smart_format"],
+                model=state.input_model_options.model,
+                punctuate=state.input_model_options.punctuate,
+                language=state.input_model_options.language,
+                encoding=state.input_model_options.encoding,
+                channels=state.input_model_options.channels,
+                sample_rate=state.input_model_options.sample_rate,
+                endpointing=state.input_model_options.endpointing,
+                smart_format=state.input_model_options.smart_format,
             )
 
             await deepgram_connection.start(options)
@@ -94,7 +94,7 @@ class UserInput:
         self.question_text = ""
 
     async def get_input(self):
-        if self.state.input_model_options["provider"] != "text":
+        if self.state.input_model_options.provider != "text":
             if self.state.is_hotkey_enabled:
                 print_text(state=self.state, text="Double-tap 2 times and start talking")
                 if self.state.output_model == "deepgram":

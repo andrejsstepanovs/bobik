@@ -38,11 +38,10 @@ class RetrieveModels(BaseTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         models = []
-        for model_name, options in self.config.settings["models"].items():
+        for model_name, options in self.config.settings.models.items():
             models.append(model_name)
-            if "synonyms" in options:
-                for synonym in options["synonyms"]:
-                    models.append(synonym)
+            for synonym in options.synonyms:
+                models.append(synonym)
 
         return str(models)
 
@@ -64,10 +63,10 @@ class SwitchModel(BaseTool):
         model: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
-        for name, options in self.config.settings["models"].items():
+        for name, options in self.config.settings.models.items():
             all_names_with_synonyms = [name]
-            if "synonyms" in options:
-                all_names_with_synonyms.extend(options["synonyms"])
+            if len(options.synonyms) > 0:
+                all_names_with_synonyms.extend(options.synonyms)
             if model in all_names_with_synonyms:
                 self.state.set_llm_model(name)
                 return "Changed to " + model

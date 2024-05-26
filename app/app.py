@@ -8,6 +8,7 @@ from app.io_output import TextToSpeech
 from app.config import Configuration
 from app.llm_provider import LanguageModelProvider
 from app.state import ApplicationState
+from app.settings import Settings
 from app.transcript import Transcript
 from app.tool_loader import ToolLoader
 from app.pkg.beep import BeepGenerator
@@ -21,7 +22,7 @@ class App:
     def __init__(self, config_file: str = ""):
         self.config_file = config_file
         self.manager = None
-        self.options = None
+        self.settings = None
         self.state_change_parser = None
         self.llm_provider = None
         self.llm_agent = None
@@ -30,11 +31,11 @@ class App:
         self.state = None
 
     def load_config_and_state(self):
-        self.options = self.load_options()
-        self.config = Configuration(settings=self.options)
+        self.settings = self.load_options()
+        self.config = Configuration(settings=self.settings)
         self.state = ApplicationState(config=self.config)
 
-    def load_options(self) -> dict:
+    def load_options(self) -> Settings:
         if self.config_file:
             os.environ["COMPUTER_CONFIG_FILE"] = self.config_file
 
@@ -45,10 +46,19 @@ class App:
         if not os.path.exists(config_path):
             raise Exception(f"{config_path} file not found")
 
-        with open(config_path, "r") as file:
-            options = yaml.safe_load(file)
+        return self.load_settings(config_path)
 
-        return options
+    def load_settings(self, file_path: str) -> Settings:
+        with open(file_path, "r") as stream:
+            try:
+                raw_config = yaml.safe_load(stream)
+                return Settings(**raw_config)
+            except yaml.YAMLError as exc:
+                print(f"Failed to load {file_path}. Not valid yaml file. {exc}")
+                exit(1)
+            except Exception as e:
+                print(f"Failed to load {file_path}. Not valid. {e}")
+                exit(1)
 
     def load_state_change_parser(self):
         self.state_change_parser = StateTransitionParser(config=self.config, state=self.state)
@@ -97,36 +107,37 @@ class App:
         print("  Select model by typing its name.")
         print("  Available models:")
 
-        for model_name, model_config in self.config.settings["models"].items():
-            if 'model' not in model_config or model_config['model'] is None or model_config['model'] == "":
+        settings: Settings = self.config.settings
+        for model_name, model_config in settings.models.items():
+            if model_config.model is None or model_config.model == "":
                 continue
-            if model_config['provider'] == "google" and self.config.google_settings["api_key"] is None:
+            if model_config.provider == "google" and self.config.google_settings["api_key"] is None:
                 continue
-            if model_config['provider'] == "mistral" and self.config.mistral_settings["api_key"] is None:
+            if model_config.provider == "mistral" and self.config.mistral_settings["api_key"] is None:
                 continue
-            if model_config['provider'] == "groq" and self.config.groq_settings["api_key"] is None:
+            if model_config.provider == "groq" and self.config.groq_settings["api_key"] is None:
                 continue
-            if model_config['provider'] == "openai" and self.config.openai_settings["api_key"] is None:
+            if model_config.provider == "openai" and self.config.openai_settings["api_key"] is None:
                 continue
-            if model_config['provider'] == "openai_custom" and (self.config.openai_settings["api_key"] is None or self.config.custom_provider_settings["base_url"] is None):
+            if model_config.provider == "openai_custom" and (self.config.openai_settings["api_key"] is None or self.config.custom_provider_settings["base_url"] is None):
                 continue
-            if model_config['provider'] == "lm_studio" and self.config.lmstudio_provider_settings["base_url"] is None:
+            if model_config.provider == "lm_studio" and self.config.lmstudio_provider_settings["base_url"] is None:
                 continue
-            if model_config['provider'] == "ollama" and ("enabled" not in self.config.ollama_settings or self.config.ollama_settings["enabled"]):
+            if model_config.provider == "ollama" and self.config.ollama_settings["enabled"]:
                 continue
-            print(f"    - {model_name} ({model_config['provider']} / {model_config['model']})")
+            print(f"    - {model_name} ({model_config.provider} / {model_config.model})")
         print("")
         print("  Available Input methods:")
-        for model_name, model_config in self.config.settings["io_input"].items():
-            if model_config['provider'] == "deepgram_settings" and self.config.deepgram_settings["api_key"] is None:
+        for model_name, model_config in settings.io_input.items():
+            if model_config.provider == "deepgram_settings" and self.config.deepgram_settings["api_key"] is None:
                 continue
-            print(f"    - {model_name} ({model_config['provider']} / {'model' in model_config and model_config['model'] or 'None'})")
+            print(f"    - {model_name} ({model_config.provider} / {model_config.model})")
         print("")
         print("  Available Output methods:")
-        for model_name, model_config in self.config.settings["io_output"].items():
-            if model_config['provider'] == "deepgram_settings" and self.config.deepgram_settings["api_key"] is None:
+        for model_name, model_config in self.config.settings.io_output.items():
+            if model_config.provider == "deepgram_settings" and self.config.deepgram_settings["api_key"] is None:
                 continue
-            print(f"    - {model_name} ({model_config['provider']} / {'model' in model_config and model_config['model'] or 'None'})")
+            print(f"    - {model_name} ({model_config.provider} / {model_config.model}")
         print("")
         print("  Examples:")
         print("  - python run.py --once --quit What is the capital of France")

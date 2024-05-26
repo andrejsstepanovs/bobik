@@ -14,11 +14,11 @@ class LanguageModelProvider:
         self.config = config
 
     def get_model(self):
-        if self.state.llm_model_options["model"] == "":
+        if self.state.llm_model_options.model == "":
             raise ValueError("No model specified.")
 
-        provider_name = self.state.llm_model_options["provider"]
-        model_name = self.state.llm_model_options["model"]
+        provider_name = self.state.llm_model_options.provider
+        model_name = self.state.llm_model_options.model
 
         print_text(state=self.state, text=f"Model: {self.state.llm_model}, LLM: {model_name}, Provider: {provider_name}, Temp: {self.config.agent_temperature}")
 
