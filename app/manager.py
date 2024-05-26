@@ -18,7 +18,6 @@ from app.pkg.beep import BeepGenerator
 from app.llm_provider import LanguageModelProvider
 from app.io_input import UserInput
 from app.my_print import print_text
-from app.pkg.history import ConversationHistory
 
 
 class ConversationManager:
@@ -28,7 +27,6 @@ class ConversationManager:
             state: ApplicationState,
             agent: LargeLanguageModelAgent,
             provider: LanguageModelProvider,
-            history: ConversationHistory,
             collector: Transcript,
             tool_loader: ToolLoader,
             parser: StateTransitionParser,
@@ -42,7 +40,6 @@ class ConversationManager:
         self.tool_loader = tool_loader
         self.config = config
         self.state = state
-        self.history = history
         self.collector = collector
         self.response = response
         self.current_state_hash = None
@@ -61,7 +58,8 @@ class ConversationManager:
 
     def add_text_to_history(self, who, text):
         if not self.state.are_tools_enabled:
-            self.history.add_message(f"{who}: {text}")
+            if who == self.config.agent_name:
+                self.agent.memory.save_context({"input": self.user_input.question_text}, {"output": text})
 
         if self.config.history_file is not None and self.config.history_file != "":
             with open(self.config.history_file, "a") as file:
@@ -134,14 +132,14 @@ class ConversationManager:
                 text = self.user_input.question_text
 
                 # no agent mode history feature in langchain don't work. It is there, but dont work. Prepending history manually.
-                if not self.state.are_tools_enabled and self.history.size() > 0:
-                    text = str(self.history) + "\n" + text
+                if not self.state.are_tools_enabled:
+                    text = str(self.agent.memory.chat_memory) + "\n" + text
 
                 response = self.agent.ask_question(text=text, stream=stream)
                 response_text = self.write_response(agent_name=self.config.agent_name, stream=stream, agent_response=response, agent=self.agent, is_quiet=self.state.is_quiet)
+                self.add_text_to_history(self.config.agent_name, response_text)
                 if self.state.is_stopped:
                     break
-                self.add_text_to_history(self.config.agent_name, response_text)
                 self.response.respond(response_text)
                 self.response.wait_for_audio_process()
                 self.user_input.question_text = ""
@@ -171,6 +169,6 @@ class ConversationManager:
 
             for chunk in agent.get_str(agent_response):
                 print(chunk, end="", flush=True)
-                response.append(chunk)
+                response.append(chunk.strip(" "))
             print("")
         return " ".join(response)
