@@ -112,9 +112,10 @@ class LargeLanguageModelAgent:
         return self.model.invoke(text)
 
     def get_str(self, response):
-        if inspect.isgenerator(response):
+        if inspect.isgenerator(response) or inspect.isgeneratorfunction(response):
             for chunk in response:
                 yield self.response_to_str(chunk)
+
         return self.response_to_str(response)
 
     def response_to_str(self, response):

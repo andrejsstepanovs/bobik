@@ -5,10 +5,7 @@ from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import GoogleGenerativeAI
 from langchain_community.llms import Ollama
-from app.mistral import EnhancedChatMistralAI
-
-# from langchain_community.chat_models import ChatOllama
-# from langchain_mistralai.chat_models import ChatMistralAI
+from langchain_mistralai.chat_models import ChatMistralAI
 
 
 class LanguageModelProvider:
@@ -33,7 +30,7 @@ class LanguageModelProvider:
             )
 
         if provider_name == "mistral" and self.config.mistral_settings["api_key"] is not None:
-            return EnhancedChatMistralAI(
+            return ChatMistralAI(
                 model_name=model_name,
                 temperature=self.state.temperature,
                 mistralai_api_key=self.config.mistral_settings["api_key"],
