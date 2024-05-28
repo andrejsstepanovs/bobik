@@ -63,6 +63,9 @@ class App:
     def load_state_change_parser(self):
         self.state_change_parser = StateTransitionParser(config=self.config, state=self.state)
 
+    def load_agent(self):
+        self.manager.reload_agent()
+
     def load_manager(self):
         self.llm_provider = LanguageModelProvider(config=self.config, state=self.state)
         self.tool_provider = ToolLoader(config=self.config, state=self.state)
@@ -200,20 +203,30 @@ class App:
         return loop, quiet, first_question
 
     def start(self, loop: bool = False, question: str = ""):
+        if question == "":
+            first_questions = []
+        else:
+            first_questions = [question]
         try:
             if loop:
-                asyncio.run(self.manager.main_loop(question))
+                asyncio.run(self.manager.main_loop(first_questions))
             else:
-                asyncio.run(self.manager.question_answer(question))
+                asyncio.run(self.manager.question_answer(first_questions))
 
         except KeyboardInterrupt:
             if not self.state.is_quiet:
                 print("Exiting...")
             quit(0)
 
-    def question(self, question: str = "") -> str:
-        asyncio.run(self.manager.question_answer(question))
-        return self.manager.answer_text
+    async def question(self, questions: list[str]) -> str:
+        try:
+            self.manager.answer_text = ""
+            await self.manager.question_answer(questions)
+            return self.manager.answer_text
+        except KeyboardInterrupt:
+            if not self.state.is_quiet:
+                print("Exiting...")
+            quit(0)
 
     def stdin_input(self) -> str:
         piped_input = []

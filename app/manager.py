@@ -25,7 +25,6 @@ from langchain_core.messages import BaseMessage
 from langchain_core.messages.ai import AIMessage as AIMessage2
 from langchain_core.messages.ai import BaseMessage as BaseMessage2
 
-
 class ConversationManager:
     def __init__(
             self,
@@ -63,8 +62,14 @@ class ConversationManager:
 
         return self.agent
 
-    def add_text_to_history(self, who, text):
-        if not self.state.are_tools_enabled:
+    def clear_memory(self):
+        if self.agent.memory:
+            self.agent.memory.clear()
+        self.agent.load_memory(force=True)
+        self.agent.initialize_prompt()
+
+    def add_text_to_history(self, who: str, text: str, force: bool = False):
+        if not self.state.are_tools_enabled or force:
             if who == self.config.agent_name:
                 self.agent.memory.save_context({"input": self.user_input.question_text}, {"output": text})
 
@@ -78,14 +83,18 @@ class ConversationManager:
         if self.user_input.question_text.strip() == "":
             return False, False
 
+        state_changed: bool = False
+        stop: bool = False
         state_changed, stop = self.parser.quick_state_change(self.user_input.question_text)
         if state_changed or stop:
             return state_changed, stop
 
-        input_was_changed = False
+        input_was_changed: bool = False
         if "pre-parsers" in self.config.settings:
             if self.config.settings.pre_parsers.clipboard.enabled:
                 if check_text_for_phrases(state=self.state, contains=True, phrases=["clipboard"], question=self.user_input.question_text):
+                    changed: bool = False
+                    out: str = ""
                     changed, out = ClipboardContentParser().parse(self.user_input.question_text)
                     if changed:
                         input_was_changed = True
@@ -93,6 +102,8 @@ class ConversationManager:
 
             if self.config.settings.pre_parsers.time.enabled:
                 time_parser = CurrentTimeAndDateParser(timezone=self.config.prompt_replacements["timezone"], state=self.state)
+                changed: bool = False
+                out: str = ""
                 changed, out = time_parser.parse(self.user_input.question_text)
                 if changed:
                     input_was_changed = True
@@ -103,46 +114,57 @@ class ConversationManager:
 
         return False, False
 
-    async def main_loop(self, first_question: str = ""):
+    async def main_loop(self, first_question: list[str] = None):
         while self.state.is_stopped is False:
             stop = await self.question_answer(first_question)
-            first_question = ""
+            first_question = None
             if stop:
                 break
 
-    async def question_answer(self, first_question: str = "") -> bool:
+    async def question_answer(self, first_question: list[str] = None) -> bool:
         print_text(state=self.state, text=f"\033[93m{self.state.input_model}\033[0m → \033[91;1;4m{self.state.llm_model}\033[0m ({self.state.llm_model_options.model}) → \033[93m{self.state.output_model}\033[0m")
 
-        if first_question != "":
-            trimmed_first_question = first_question
-            if len(first_question) > 100:
-                words = split_text_into_words(first_question)
+        if first_question is not None and len(first_question) > 0:
+            i = len(first_question)
+            for question in first_question:
+                self.user_input.handle_full_sentence(question)
+                i -= 1
+                if i == 0:
+                    break
+                self.user_input.handle_full_sentence(question)
+                self.add_text_to_history(self.config.agent_name, "Got it.", force=True)
+
+            final_question: str = " ".join(first_question)
+            trimmed_first_question: str = final_question
+            if len(final_question) > 100:
+                words = split_text_into_words(final_question)
                 trimmed_first_question = " ".join(words[:15]) + " (..)"
 
             print_text(state=self.state, text=f"{self.config.user_name}: {trimmed_first_question}")
-            self.user_input.handle_full_sentence(first_question)
         else:
             await self.user_input.get_input()
 
         self.add_text_to_history(self.config.user_name, self.user_input.question_text)
-        proceed, stop = self.pre_parse_question()
-        self.reload_agent(force=proceed)
-        if proceed:
+        state_changed: bool = False
+        stop: bool = False
+        state_changed, stop = self.pre_parse_question()
+        if state_changed:
+            self.reload_agent(force=state_changed)
             return False
         if stop:
             return True
 
-        tries = 0
+        tries: int = 0
         while tries < self.config.retry_settings["max_tries"]:
             try:
-                stream = not self.state.is_quiet
-                text = self.user_input.question_text
+                stream: bool = not self.state.is_quiet
+                text: str = self.user_input.question_text
 
                 # no agent mode history feature in langchain don't work. It is there, but dont work. Prepending history manually.
                 if not self.state.are_tools_enabled:
                     text = str(self.agent.memory.chat_memory) + "\n" + text
 
-                response = self.agent.ask_question(text=text, stream=stream)
+                response: str = self.agent.ask_question(text=text, stream=stream)
                 self.answer_text = self.write_response(agent_name=self.config.agent_name, stream=stream, agent_response=response, agent=self.agent, is_quiet=self.state.is_quiet)
                 self.add_text_to_history(self.config.agent_name, self.answer_text)
                 if self.state.is_stopped:
@@ -183,7 +205,6 @@ class ConversationManager:
                 response.append(str(chunk).strip(" "))
             print("")
         return " ".join(response)
-
 
 def response_to_str(response, is_quiet: bool) -> str:
     if isinstance(response, BaseMessage):

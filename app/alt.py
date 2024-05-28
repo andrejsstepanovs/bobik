@@ -6,17 +6,17 @@ from app.state import ApplicationState
 
 
 class AltKeyDoublePressDetector:
-    def __init__(self, app_state: ApplicationState, timeout_duration=0.5):  # 0.5 seconds timeout
+    def __init__(self, app_state: ApplicationState, timeout_duration: float = 0.5):
         self.app_state = app_state
-        self.timeout_duration = timeout_duration
-        self.last_press_time = 0
+        self.timeout_duration: float = timeout_duration
+        self.last_press_time: float = 0
         self.thread_lock = threading.Lock()
         self.key_listener = None
 
-    def handle_key_press(self, key):
+    def handle_key_press(self, key: keyboard.Key):
         if key == keyboard.Key.alt_l or key == keyboard.Key.alt_r:
             with self.thread_lock:
-                current_time = time.time()
+                current_time: float = time.time()
                 if current_time - self.last_press_time < self.timeout_duration:
                     print_text(state=self.app_state, text="Consecutive Alt presses detected! Stopping listener.")
                     self.key_listener.stop()

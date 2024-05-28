@@ -1,5 +1,5 @@
 import requests
-from typing import Optional
+from typing import Optional, Any
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from app.config import Configuration
@@ -75,3 +75,15 @@ class WeatherTool(BaseTool):
             self.cache[filter_date_date] = "\n".join(weather_info)
 
         return self.cache[filter_date_date]
+
+    async def _arun(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Use the tool asynchronously.
+
+        Not implemented. Don't use it.
+        """
+        raise NotImplementedError
+        #return await run_in_executor(None, self._run, *args, **kwargs)
