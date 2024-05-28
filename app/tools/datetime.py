@@ -11,7 +11,8 @@ class TimeTool(BaseTool):
     description: str = "Use this tool when you need to find current time."
 
     def _run(self, location: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        return time.strftime("%H:%M:%S")
+        return_value: str = time.strftime("%H:%M:%S")
+        return return_value
 
 
 class DateTool(BaseTool):
@@ -21,9 +22,10 @@ class DateTool(BaseTool):
     description: str = "Use this tool when you need to find current date."
 
     def _run(self, location: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        current_time = time.time()
-        current_struct_time = time.localtime(current_time)
-        return time.strftime("%Y-%m-%d", current_struct_time)
+        current_time: float = time.time()
+        current_struct_time: time.struct_time = time.localtime(current_time)
+        return_value: str = time.strftime("%Y-%m-%d", current_struct_time)
+        return return_value
 
 
 class DateTimeTool(BaseTool):
@@ -36,9 +38,10 @@ class DateTimeTool(BaseTool):
     )
 
     def _run(self, timezone: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        current_time = time.time()
-        current_struct_time = time.localtime(current_time)
-        return "Current date and time is: " + time.strftime("%Y-%m-%d %H:%M:%S", current_struct_time)
+        current_time: float = time.time()
+        current_struct_time: time.struct_time = time.localtime(current_time)
+        return_value: str = "Current date and time is: " + time.strftime("%Y-%m-%d %H:%M:%S", current_struct_time)
+        return return_value
 
 
 class TextTool(BaseTool):
@@ -51,6 +54,7 @@ class TextTool(BaseTool):
     )
 
     def _run(self, timezone: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        current_time = time.time()
-        current_struct_time = time.localtime(current_time)
-        return "Current date and time is: " + time.strftime("%Y-%m-%d %H:%M:%S", current_struct_time)
+        current_time: float = time.time()
+        current_struct_time: time.struct_time = time.localtime(current_time)
+        return_value: str = "Current date and time is: " + time.strftime("%Y-%m-%d %H:%M:%S", current_struct_time)
+        return return_value

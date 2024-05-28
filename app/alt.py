@@ -9,9 +9,9 @@ class AltKeyDoublePressDetector:
     def __init__(self, app_state: ApplicationState, timeout_duration: float = 0.5):
         self.app_state = app_state
         self.timeout_duration: float = timeout_duration
-        self.last_press_time: float = 0
-        self.thread_lock = threading.Lock()
-        self.key_listener = None
+        self.last_press_time: float = 0.0
+        self.thread_lock: threading.Lock = threading.Lock()
+        self.key_listener: keyboard.Listener = None
 
     def handle_key_press(self, key: keyboard.Key):
         if key == keyboard.Key.alt_l or key == keyboard.Key.alt_r:

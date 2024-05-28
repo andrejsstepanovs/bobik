@@ -1,7 +1,6 @@
 import shutil
 import subprocess
 import requests
-import app
 import threading
 from pynput import keyboard
 from pynput.keyboard import Key
@@ -17,11 +16,11 @@ class KeyPressHandler:
         self.audio_process = audio_process
         self.stop_event = threading.Event()
         self.listener = None
-        self.last_ctrl_press_time = 0
+        self.last_ctrl_press_time: float = 0
 
     def handle_double_ctrl(self, key):
         if key == Key.alt_l or key == Key.alt_r:
-            current_time = time.time()
+            current_time: float = time.time()
             if current_time - self.last_ctrl_press_time < 0.5:
                 self.stop_handler()
                 return False  # Stop the listener
@@ -44,7 +43,7 @@ class TextToSpeech:
 
     @staticmethod
     def is_installed(lib_name: str) -> bool:
-        lib = shutil.which(lib_name)
+        lib: str = shutil.which(lib_name)
         return lib is not None
 
     def respond(self, text: str):
@@ -83,12 +82,12 @@ class TextToSpeech:
 
             try:
                 stream_started = False
-                headers = {
+                headers: dict = {
                     "Authorization": f"Token {self.config.deepgram_settings['api_key']}",
                     "Content-Type": "application/json"
                 }
                 # Call Deepgram API to get audio stream.
-                url = self.config.deepgram_settings['url']+"speak?" + urllib.parse.urlencode({
+                url: str = self.config.deepgram_settings['url']+"speak?" + urllib.parse.urlencode({
                     "model": self.state.output_model_options.model,
                     "performance": self.state.output_model_options.performance,
                     "encoding": self.state.output_model_options.encoding,

@@ -3,9 +3,9 @@
 import sys
 # get rid of deprecation warning stdout.
 import warnings ; warnings.warn = lambda *args,**kwargs: None
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 from app.app import App
 
-warnings.warn = lambda *args, **kwargs: None
 
 if __name__ == "__main__":
     app: App = App()

@@ -1,5 +1,5 @@
 import requests
-from typing import Optional, Any
+from typing import Optional, Any, Dict, List
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from app.config import Configuration
@@ -26,25 +26,25 @@ class WeatherTool(BaseTool):
     ) -> str:
         """Use the tool."""
 
-        now = datetime.now()
-        filter_date = None
-        filter_date_date = ""
+        now: datetime = datetime.now()
+        filter_date: Optional[datetime] = None
+        filter_date_date: str = ""
         if date is not None and date != "":
             filter_date = dateparser.parse(date)
             if filter_date is not None:
                 filter_date_date = filter_date.strftime("%Y-%m-%d")
 
         if filter_date_date not in self.cache:
-            location = self.config.prompt_replacements["location"]
+            location: str = self.config.prompt_replacements["location"]
             location = location.replace(",", "").replace(" ", "-")
-            response = requests.get(f"https://wttr.in/{location}?format=j1")
+            response: requests.Response = requests.get(f"https://wttr.in/{location}?format=j1")
 
-            current_time = now.strftime("%Y-%m-%d %H:%M")
-            weather_info = [f"Current time is {current_time}"]
+            current_time: str = now.strftime("%Y-%m-%d %H:%M")
+            weather_info: List[str] = [f"Current time is {current_time}"]
             if response.status_code == 200:
                 data = response.json()
                 for area in data['nearest_area']:
-                    location_info = []
+                    location_info: List[str] = []
                     for location in area['areaName']:
                         location_info.append(location['value'])
                     for country in area['country']:
@@ -55,12 +55,15 @@ class WeatherTool(BaseTool):
                 if filter_date is None or filter_date_date == now.strftime("%Y-%m-%d"):
                     weather_info.append("# Current Weather:")
                     for current_condition in data['current_condition']:
-                        for description in current_condition['weatherDesc']:
-                            weather_info.append(f"- Condition: {description['value']}")
+                        description: Dict[str, Any] = current_condition['weatherDesc'][0]
+                        weather_info.append(f"- Condition: {description['value']}")
                         weather_info.append(f"- Temperature (°C): {current_condition['temp_C']}")
-                        weather_info.append(f"- Humidity: {current_condition['humidity']}")
-                        weather_info.append(f"- Cloud Cover (%): {current_condition['cloudcover']}")
-                        weather_info.append(f"- Wind Speed (km/h): {current_condition['windspeedKmph']}")
+                        humidity: str = current_condition['humidity']
+                        cloudcover: str = current_condition['cloudcover']
+                        windspeedKmph: str = current_condition['windspeedKmph']
+                        weather_info.append(f"- Humidity: {humidity}")
+                        weather_info.append(f"- Cloud Cover (%): {cloudcover}")
+                        weather_info.append(f"- Wind Speed (km/h): {windspeedKmph}")
 
                 weather_info.append("# Forecast:")
                 for current_condition in data['weather']:
@@ -68,9 +71,10 @@ class WeatherTool(BaseTool):
                         continue
                     weather_info.append(f"- {current_condition['date']}")
                     for description in current_condition['hourly']:
-                        time = str(description['time']).zfill(4)
+                        time: str = str(description['time']).zfill(4)
+                        chanceofrain: str = description['chanceofrain']
                         weather_info.append(
-                            f"-- {time[:2]}:{time[2:]}: {description['weatherDesc'][0]['value']}, {description['tempC']}°C, {description['chanceofrain']}% rain, {description['windspeedKmph']} km/h")
+                            f"-- {time[:2]}:{time[2:]}: {description['weatherDesc'][0]['value']}, {description['tempC']}°C, {chanceofrain}% rain, {description['windspeedKmph']} km/h")
 
             self.cache[filter_date_date] = "\n".join(weather_info)
 

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from csv import reader
 import dateparser
@@ -25,22 +25,22 @@ class CalendarEventTool(BaseTool):
         self.calendar.get_events()
         events = self.calendar.filter_and_sort_events()
 
-        now = datetime.now()
-        current_time = now.strftime("%Y-%m-%d %H:%M")
-        output = [
+        now: datetime = datetime.now()
+        current_time: str = now.strftime("%Y-%m-%d %H:%M")
+        output: List[str] = [
             f"Current time is {current_time}",
             "Here are calendar events:",
         ]
 
-        filter_date = None
+        filter_date: Optional[datetime] = None
         if date is not None and date != "":
             filter_date = dateparser.parse(date)
             if filter_date is not None:
-                filter_date_date = filter_date.strftime("%Y-%m-%d")
+                filter_date_date: str = filter_date.strftime("%Y-%m-%d")
 
         for event in events:
-            event_date = event["start"].strftime("%Y-%m-%d")
-            is_today = current_time[:10] == event_date
+            event_date: str = event["start"].strftime("%Y-%m-%d")
+            is_today: bool = current_time[:10] == event_date
             if filter_date is not None and filter_date_date != event_date:
                 continue
 
@@ -48,7 +48,7 @@ class CalendarEventTool(BaseTool):
             output.append("Date: " + event_date + (" (Today)" if is_today else ""))
             output.append("Event: " + event["summary"].replace(",", " "))
             output.append("Time: " + event["start"].strftime("%H:%M") + " - " + event["end"].strftime("%H:%M"))
-            calendar_name = event["calendar"]
+            calendar_name: str = event["calendar"]
             if calendar_name.lower() != event["name"].lower():
                 calendar_name = calendar_name + " - " + event["name"]
             output.append("Calendar: " + calendar_name)

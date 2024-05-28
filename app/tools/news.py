@@ -1,5 +1,5 @@
 import requests
-from typing import Optional
+from typing import Optional, Dict, List
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from langchain_community.utilities.bing_search import BingSearchAPIWrapper
@@ -31,7 +31,7 @@ class NewsRetrievalTool(BaseTool):
     ) -> str:
         """Use the tool."""
 
-        search_parameters = {
+        search_parameters: Dict[str, str] = {
             'mkt': 'en-US',
             'cc': 'Germany',
             'safeSearch': 'Off',
@@ -41,34 +41,34 @@ class NewsRetrievalTool(BaseTool):
 
         if search_query.startswith('category'):
             search_parameters['category'] = search_query.replace('category', '').strip()
-            url_suffix = ""
+            url_suffix: str = ""
         elif search_query == "trendingtopics":
-            search_parameters['count'] = self.results_count
-            url_suffix = "/trendingtopics"
+            search_parameters['count'] = str(self.results_count)
+            url_suffix: str = "/trendingtopics"
         else:
-            search_parameters['count'] = self.results_count
+            search_parameters['count'] = str(self.results_count)
             search_parameters['q'] = search_query
             search_parameters['originalImg'] = 'No'
             search_parameters['freshness'] = 'Week'
-            url_suffix = "/search"
+            url_suffix: str = "/search"
 
-        url = self.bing_search_url + url_suffix
+        url: str = self.bing_search_url + url_suffix
 
-        response = requests.get(
+        response: requests.Response = requests.get(
             url,
             headers={'Ocp-Apim-Subscription-Key': self.subscription_key},
             params=search_parameters
         )
         response.raise_for_status()
-        news_articles = response.json()
+        news_articles: dict = response.json()
 
         if len(news_articles) == 0:
             return "Didn't find any news articles"
 
-        formatted_response = []
-        article_number = 1
+        formatted_response: List[dict] = []
+        article_number: int = 1
         for article in news_articles["value"]:
-            article_content = {'number': article_number, 'title': article['name']}
+            article_content: dict = {'number': article_number, 'title': article['name']}
             article_number += 1
             if 'isBreakingNews' in article:
                 article_content['isBreakingNews'] = article['isBreakingNews']

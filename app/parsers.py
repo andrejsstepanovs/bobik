@@ -6,21 +6,19 @@ from app.my_print import print_text
 import sys
 import os
 
-
-def split_text_into_words(text) -> list[str]:
-    words = []
-    lines = text.split('\n')
+def split_text_into_words(text: str) -> list[str]:
+    words: list[str] = []
+    lines: list[str] = text.split('\n')
     for line in lines:
         for word in line.rstrip('\n').split():
             words.append(word.strip())
         words.append('\n')
     return words
 
-
-def format_text(text):
+def format_text(text: str) -> str:
     """Keep lines under 110 characters and also keep newlines."""
-    formatted_text = []
-    current_line = ""
+    formatted_text: list[str] = []
+    current_line: str = ""
     for word in split_text_into_words(text):
         if len(current_line) + len(word) + 1 > 110:
             formatted_text.append(current_line.strip())
@@ -30,9 +28,8 @@ def format_text(text):
     formatted_text.append(current_line.strip())
     return "\n".join(formatted_text)
 
-
-def check_text_for_phrases(state: ApplicationState, question: str, phrases: list, contains=False) -> bool:
-    response_lower = question.lower()
+def check_text_for_phrases(state: ApplicationState, question: str, phrases: list[str], contains: bool = False) -> bool:
+    response_lower: str = question.lower()
     for phrase in phrases:
         if contains:
             if phrase in response_lower:
@@ -48,7 +45,7 @@ def check_text_for_phrases(state: ApplicationState, question: str, phrases: list
 
 class ClipboardContentParser:
     def parse(self, question: str) -> tuple[bool, str]:
-        clipboard_content = pyperclip.paste()
+        clipboard_content: str = pyperclip.paste()
         clipboard_content = clipboard_content.rstrip('\n')
         if clipboard_content == "":
             return False, question
@@ -57,20 +54,19 @@ class ClipboardContentParser:
 
 
 class CurrentTimeAndDateParser:
-    def __init__(self, state: ApplicationState, timezone):
+    def __init__(self, state: ApplicationState, timezone: str):
         self.timezone = timezone
         self.state = state
 
     def parse(self, question: str) -> tuple[bool, str]:
-        phrases = ["time", "date", "now", "today", "tomorrow", "yesterday", "week", "month", "year", "current"]
+        phrases: list[str] = ["time", "date", "now", "today", "tomorrow", "yesterday", "week", "month", "year", "current"]
         if not check_text_for_phrases(state=self.state, contains=True, phrases=phrases, question=question):
             return False, question
 
-        current_time = time.strftime("%H:%M:%S")
-        current_date = time.strftime("%Y-%m-%d")
+        current_time: str = time.strftime("%H:%M:%S")
+        current_date: str = time.strftime("%Y-%m-%d")
 
         return True, question + f"\n- Today:\n-- Date: {current_date}\n-- Time: {current_time}\n-- Timezone: {self.timezone}"
-
 
 class StateTransitionParser:
     def __init__(self, state: ApplicationState, config: Configuration):

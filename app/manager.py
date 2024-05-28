@@ -19,11 +19,13 @@ from app.pkg.beep import BeepGenerator
 from app.llm_provider import LanguageModelProvider
 from app.io_input import UserInput
 from app.my_print import print_text
+from typing import List
 import inspect
 from langchain_core.messages import AIMessage
 from langchain_core.messages import BaseMessage
 from langchain_core.messages.ai import AIMessage as AIMessage2
 from langchain_core.messages.ai import BaseMessage as BaseMessage2
+
 
 class ConversationManager:
     def __init__(
@@ -125,7 +127,7 @@ class ConversationManager:
         print_text(state=self.state, text=f"\033[93m{self.state.input_model}\033[0m → \033[91;1;4m{self.state.llm_model}\033[0m ({self.state.llm_model_options.model}) → \033[93m{self.state.output_model}\033[0m")
 
         if first_question is not None and len(first_question) > 0:
-            i = len(first_question)
+            i: int = len(first_question)
             for question in first_question:
                 self.user_input.handle_full_sentence(question)
                 i -= 1
@@ -137,7 +139,7 @@ class ConversationManager:
             final_question: str = " ".join(first_question)
             trimmed_first_question: str = final_question
             if len(final_question) > 100:
-                words = split_text_into_words(final_question)
+                words: List[str] = split_text_into_words(final_question)
                 trimmed_first_question = " ".join(words[:15]) + " (..)"
 
             print_text(state=self.state, text=f"{self.config.user_name}: {trimmed_first_question}")
@@ -157,7 +159,7 @@ class ConversationManager:
         tries: int = 0
         while tries < self.config.retry_settings["max_tries"]:
             try:
-                stream: bool = not self.state.is_quiet
+                stream: bool = not self.state.is_quiet and not self.state.are_tools_enabled
                 text: str = self.user_input.question_text
 
                 # no agent mode history feature in langchain don't work. It is there, but dont work. Prepending history manually.
@@ -178,9 +180,9 @@ class ConversationManager:
                     print("OK...")
                 break
             except Exception as e:
-                tb = traceback.format_exc()
+                tb: str = traceback.format_exc()
                 print_text(state=self.state, text=tb)
-                sleep_sec = self.config.retry_settings["sleep_seconds_between_tries"]
+                sleep_sec: float = self.config.retry_settings["sleep_seconds_between_tries"]
                 print_text(state=self.state, text=f"Error processing LLM: {e}")
                 print_text(state=self.state, text=f"Sleep and try again after: {sleep_sec} sec")
                 tries += 1
@@ -188,9 +190,9 @@ class ConversationManager:
 
     @staticmethod
     def write_response(agent: LargeLanguageModelAgent, is_quiet: bool, agent_name: str, stream: bool, agent_response) -> str:
-        response = []
+        response: List[str] = []
         if not stream:
-            txt = response_to_str(response=agent_response, is_quiet=is_quiet)
+            txt: str = response_to_str(response=agent_response, is_quiet=is_quiet)
             response.append(txt)
             if is_quiet:
                 print(txt)
@@ -216,10 +218,6 @@ def response_to_str(response, is_quiet: bool) -> str:
                     return "\nThinking..."
                 else:
                     return ""
-            if not is_quiet:
-                return "\nUnknown..."
-            else:
-                return ""
 
     if "output" in response:
         return response["output"]

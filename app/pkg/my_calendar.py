@@ -10,24 +10,25 @@ import pickle
 import recurring_ical_events
 import app.state as AppStatus
 from app.parsers import print_text
+from typing import Any
 
 
 class Calendar:
     def __init__(self, state: AppStatus, options: dict):
         self.state = state
-        self.calendars = options
-        self.cache_enabled = options['cache']['enabled'] == "Yes"
-        self.cache_file_path = options['cache']['file']
+        self.calendars: dict[str, Any] = options
+        self.cache_enabled: bool = options['cache']['enabled'] == "Yes"
+        self.cache_file_path: str = options['cache']['file']
         if self.cache_enabled and self.cache_file_path == "":
             raise ValueError("Cache file not specified")
 
-        self.events = []
+        self.events: list[dict] = []
         self.min_time: datetime.time = datetime.datetime.min.time()
         self.max_time: datetime.time = datetime.datetime.max.time()
 
     @staticmethod
-    def get_files_by_prefix(directory_path, prefix):
-        files = []
+    def get_files_by_prefix(directory_path: str, prefix: str) -> list[str]:
+        files: list[str] = []
         for root, dirs, filenames in os.walk(directory_path):
             for filename in filenames:
                 if filename.startswith(prefix):
@@ -35,7 +36,7 @@ class Calendar:
         return files
 
     @staticmethod
-    def sort_files_by_creation_time(files):
+    def sort_files_by_creation_time(files: list[str]) -> list[str]:
         return sorted(files, key=lambda x: os.path.getctime(x), reverse=True)
 
     def load_ics_files(self):
@@ -53,7 +54,7 @@ class Calendar:
                     file_name, file_extension = os.path.splitext(file)
                     if file_extension == ".zip":
                         with zipfile.ZipFile(file_name+file_extension, 'r') as zip_file:
-                            file_list = zip_file.namelist()
+                            file_list: list[str] = zip_file.namelist()
                             if len(file_list) == 0:
                                 raise ValueError(f"No files found inside zip: {zip_file}")
 
@@ -74,14 +75,14 @@ class Calendar:
             else:
                 raise ValueError("Unknown calendar type")
 
-    def load_calendar_events(self):
-        calendar_events = []
+    def load_calendar_events(self) -> list[dict]:
+        calendar_events: list[dict] = []
         for calendar in self.calendars["ics"]:
             print_text(state=self.state, text=f"Calendar: {calendar['name']} - {calendar['calendar_name']}")
             calendar_data = icalendar.Calendar.from_ical(calendar["ics"])
 
-            earliest = None
-            last = None
+            earliest: datetime.datetime = None
+            last: datetime.datetime = None
             for event in calendar_data.walk('VEVENT'):
                 start = self.convert_to_datetime(event.get("DTSTART"), self.min_time)
                 end = self.convert_to_datetime(event.get("DTEND"), self.max_time)
@@ -138,7 +139,6 @@ class Calendar:
                     "status": str(event.get("STATUS")),
                 }
                 calendar_events.append(event_dict)
-
         return calendar_events
 
     def convert_to_datetime(self, date_value: icalendar.vDDDTypes, suffix_time_if_date: datetime.time) -> datetime.datetime:
@@ -148,9 +148,9 @@ class Calendar:
             datetime_value: datetime.datetime = datetime_value.replace(tzinfo=datetime.timezone.utc)
         return datetime_value
 
-    def remove_duplicates(self, dict_list):
-        seen = set()
-        unique_list = []
+    def remove_duplicates(self, dict_list: list[dict]) -> list[dict]:
+        seen: set = set()
+        unique_list: list[dict] = []
         for d in dict_list:
             key_values = (d['summary'], d['start'], d['end'], d['description'])
             if key_values not in seen:
@@ -158,26 +158,26 @@ class Calendar:
                 unique_list.append(d)
         return unique_list
 
-    def filter_and_sort_events(self):
+    def filter_and_sort_events(self) -> list[dict]:
         sort_by: str = "start"
-        days = int(self.calendars["days"])
+        days: int = int(self.calendars["days"])
 
-        filter_status = self.calendars['filter_status']
-        ignore_names = self.calendars['ignore_event_names']
-        filter_emails = self.calendars["emails"]
+        filter_status: list[str] = self.calendars['filter_status']
+        ignore_names: list[str] = self.calendars['ignore_event_names']
+        filter_emails: list[str] = self.calendars["emails"]
 
-        filter_from_time = datetime.datetime.now()
-        filter_from_time = datetime.datetime.combine(filter_from_time.date(), self.min_time)
+        filter_from_time: datetime.datetime = datetime.datetime.now()
+        filter_from_time: datetime.datetime = datetime.datetime.combine(filter_from_time.date(), self.min_time)
 
-        filter_till_time = filter_from_time + datetime.timedelta(days=days)
-        filter_till_time = datetime.datetime.combine(filter_till_time.date(), self.max_time)
+        filter_till_time: datetime.datetime = filter_from_time + datetime.timedelta(days=days)
+        filter_till_time: datetime.datetime = datetime.datetime.combine(filter_till_time.date(), self.max_time)
 
-        filter_till_time = filter_till_time.replace(tzinfo=pytz.UTC)
-        filter_from_time = filter_from_time.replace(tzinfo=pytz.UTC)
+        filter_till_time: datetime.datetime = filter_till_time.replace(tzinfo=pytz.UTC)
+        filter_from_time: datetime.datetime = filter_from_time.replace(tzinfo=pytz.UTC)
 
-        filtered_events = []
+        filtered_events: list[dict] = []
         for event in self.events:
-            email_found = len(filter_emails) == 0   
+            email_found = len(filter_emails) == 0
             if not email_found:
                 if event["organizer"] == '' and len(event["attendees"]) == 0:
                     email_found = True
@@ -203,12 +203,11 @@ class Calendar:
             if s <= a <= e or s <= b <= e or a <= s <= b or a <= e <= b:
                 filtered_events.append(event)
 
-        unique = self.remove_duplicates(filtered_events)
-        sorted_events = sorted(unique, key=lambda x: x[sort_by])
-
+        unique: list[dict] = self.remove_duplicates(filtered_events)
+        sorted_events: list[dict] = sorted(unique, key=lambda x: x[sort_by])
         return sorted_events
 
-    def get_events(self) -> list:
+    def get_events(self) -> list[dict]:
         if self.cache_enabled and os.path.exists(self.cache_file_path):
             with open(self.cache_file_path, mode='rb') as f:
                 self.events = pickle.load(f)

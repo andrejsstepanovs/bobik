@@ -7,13 +7,7 @@ from langchain.agents import initialize_agent
 from app.tool_loader import ToolLoader
 from app.llm_provider import LanguageModelProvider
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import BaseMessageChunk
-from typing import Iterator
-from langchain_core.runnables.utils import AddableDict
 from langchain.agents.agent import AgentExecutor
-from langchain.chains import ConversationChain
-from langchain_core.memory import BaseMemory
-from langchain.chains.question_answering import load_qa_chain
 
 
 class LargeLanguageModelAgent:
@@ -37,8 +31,8 @@ class LargeLanguageModelAgent:
         self.chain = None
         self.prompt = None
 
-    def load_memory(self, force: bool = False):
-        return_messages = True
+    def load_memory(self, force: bool = False) -> None:
+        return_messages: bool = True
         if self.state.is_quiet:
             return_messages = False
 
@@ -50,8 +44,8 @@ class LargeLanguageModelAgent:
                 return_messages=return_messages,
             )
 
-    def initialize_prompt(self):
-        prompts_changed = set(self.loaded_prompts) != set(self.state.prompts)
+    def initialize_prompt(self) -> None:
+        prompts_changed: bool = set(self.loaded_prompts) != set(self.state.prompts)
         if prompts_changed:
             self.loaded_prompts = {}
             self.memory.clear()
@@ -61,13 +55,13 @@ class LargeLanguageModelAgent:
                 raise FileNotFoundError(f"Prompt file not found: {file_path}")
 
             with open(file_path, 'r') as file:
-                system_prompt = file.read().strip()
+                system_prompt: str = file.read().strip()
                 for key, value in self.config.prompt_replacements.items():
                     system_prompt = system_prompt.replace("{" + key + "}", value)
                 self.memory.save_context({"input": system_prompt}, {"output": "Got it!"})
                 self.loaded_prompts[file_path] = True
 
-    def reload(self):
+    def reload(self) -> None:
         self.load_memory()
         self.initialize_prompt()
 
@@ -79,8 +73,8 @@ class LargeLanguageModelAgent:
             self.tools = self.function_provider.get_tools()
             self.reload_agent()
 
-    def reload_agent(self):
-        def _handle_error(error) -> str:
+    def reload_agent(self) -> None:
+        def _handle_error(error: Exception) -> str:
             if isinstance(error, OutputParserException):
                 return "Check last answer and fix it to comply with Action/Action Input syntax!"
             return str(error)
@@ -99,7 +93,7 @@ class LargeLanguageModelAgent:
             max_execution_time=None,
         )
 
-    def ask_question(self, text: str, stream: bool = False):
+    def ask_question(self, text: str, stream: bool = False) -> str:
         if self.state.are_tools_enabled:
             if stream:
                 return self.agent.stream(input={"input": text})

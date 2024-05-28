@@ -21,7 +21,6 @@ from app.transcript import Transcript
 from app.pkg.beep import BeepGenerator
 from app.my_print import print_text
 
-
 async def listen_to_input(config: Configuration, state: ApplicationState, transcript_collector: Transcript, callback):
     if state.input_model_options.provider == "deepgram":
         if config.deepgram_settings["api_key"] is None:
@@ -30,7 +29,7 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
         if os.name == 'nt':
             raise Exception("Deepgram Windows audio input is not supported.")
 
-        transcription_complete = asyncio.Event()
+        transcription_complete: asyncio.Event = asyncio.Event()
         try:
             client_config = DeepgramClientOptions(options={"keepalive": "true"}, verbose=logging.ERROR)
             deepgram_client: DeepgramClient = DeepgramClient(api_key=config.deepgram_settings["api_key"], config=client_config)
@@ -39,7 +38,7 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
             print_text(state=state, text="\033[93m" + "Listening..." + "\033[0m")
 
             async def on_message(self, result, **kwargs):
-                sentence = result.channel.alternatives[0].transcript
+                sentence: str = result.channel.alternatives[0].transcript
 
                 if not result.speech_final:
                     if len(sentence.strip()) > 0:
@@ -47,7 +46,7 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
                     transcript_collector.add_section(sentence)
                 else:
                     transcript_collector.add_section(sentence)
-                    full_sentence = transcript_collector.retrieve_transcript()
+                    full_sentence: str = transcript_collector.retrieve_transcript()
                     if len(full_sentence.strip()) > 0:
                         full_sentence = full_sentence.strip()
                         print_text(state=state, text=f"{config.user_name}: \033[32;1m {full_sentence} \033[0m")
@@ -57,7 +56,7 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
 
             deepgram_connection.on(LiveTranscriptionEvents.Transcript, on_message)
 
-            options = LiveOptions(
+            options: LiveOptions = LiveOptions(
                 model=state.input_model_options.model,
                 punctuate=state.input_model_options.punctuate,
                 language=state.input_model_options.language,
@@ -70,7 +69,7 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
 
             await deepgram_connection.start(options)
 
-            microphone = Microphone(deepgram_connection.send)
+            microphone: Microphone = Microphone(deepgram_connection.send)
             microphone.start()
 
             await transcription_complete.wait()
@@ -83,7 +82,6 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
             return
     else:
         raise Exception("Unknown provider given")
-
 
 class UserInput:
     def __init__(self, config: Configuration, state: ApplicationState, transcript_collector: Transcript, beep: BeepGenerator):
@@ -100,7 +98,7 @@ class UserInput:
                 if self.state.output_model == "deepgram":
                     print_text(state=self.state, text="And same to stop long playback.")
 
-                detector = AltKeyDoublePressDetector(app_state=self.state)
+                detector: AltKeyDoublePressDetector = AltKeyDoublePressDetector(app_state=self.state)
                 detector.start_key_listener()
 
             self.beep.play_beep()
@@ -111,15 +109,15 @@ class UserInput:
                 callback=self.handle_full_sentence,
             )
         else:
-            text = input(f"{self.config.user_name}: ")
+            text: str = input(f"{self.config.user_name}: ")
             # split_text = text.split(":")
             # if len(split_text) > 1:
-            #     clipboard_content = pyperclip.paste()
+            #     clipboard_content: str = pyperclip.paste()
             #     if clipboard_content != "" and text != clipboard_content and split_text[1].strip() in clipboard_content:
             #         text = f"{text[0]}. Use clipboard."
             #         pyperclip.copy("")
 
             self.handle_full_sentence(text)
 
-    def handle_full_sentence(self, text):
+    def handle_full_sentence(self, text: str):
         self.question_text = text

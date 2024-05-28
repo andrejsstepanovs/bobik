@@ -1,7 +1,7 @@
 import asyncio
 import yaml
-import sys
 import os
+import sys
 from dotenv import load_dotenv
 from app.manager import ConversationManager
 from app.io_output import TextToSpeech
@@ -14,21 +14,21 @@ from app.tool_loader import ToolLoader
 from app.pkg.beep import BeepGenerator
 from app.llm_agent import LargeLanguageModelAgent
 from app.parsers import StateTransitionParser
+from typing import List
 
 load_dotenv()
 
-
 class App:
     def __init__(self, config_file: str = ""):
-        self.config_file = config_file
-        self.manager = None
-        self.settings = None
-        self.state_change_parser = None
-        self.llm_provider = None
-        self.llm_agent = None
-        self.tool_provider = None
-        self.config = None
-        self.state = None
+        self.config_file: str = config_file
+        self.manager: ConversationManager = None
+        self.settings: Settings = None
+        self.state_change_parser: StateTransitionParser = None
+        self.llm_provider: LanguageModelProvider = None
+        self.llm_agent: LargeLanguageModelAgent = None
+        self.tool_provider: ToolLoader = None
+        self.config: Configuration = None
+        self.state: ApplicationState = None
 
     def load_config_and_state(self):
         self.settings = self.load_options()
@@ -36,11 +36,8 @@ class App:
         self.state = ApplicationState(config=self.config)
 
     def load_options(self) -> Settings:
-        if self.config_file:
-            os.environ["COMPUTER_CONFIG_FILE"] = self.config_file
-
-        config_path = os.getenv("COMPUTER_CONFIG_FILE")
-        if config_path is None:
+        config_path: str = os.getenv("COMPUTER_CONFIG_FILE")
+        if not config_path:
             raise Exception("COMPUTER_CONFIG_FILE environment variable not set. Check `my_config.yaml.example` file.")
 
         if not os.path.exists(config_path):
@@ -51,7 +48,7 @@ class App:
     def load_settings(self, file_path: str) -> Settings:
         with open(file_path, "r") as stream:
             try:
-                raw_config = yaml.safe_load(stream)
+                raw_config: dict = yaml.safe_load(stream)
                 return Settings(**raw_config)
             except yaml.YAMLError as exc:
                 print(f"Failed to load {file_path}. Not valid yaml file. {exc}")
@@ -164,10 +161,11 @@ class App:
         print("  - > quit")
 
     def process_arguments(self, initial_arg_phrases: list[str]) -> tuple[bool, bool, str]:
-        first_question = ""
-        args_len = len(initial_arg_phrases)
-        loop = True
-        quiet = False
+        first_question: str = ""
+        args_len: int = len(initial_arg_phrases)
+        loop: bool = True
+        quiet: bool = False
+
         if args_len > 0:
             i = 0
             """It is important to use these flags before any following command parameters!"""
@@ -204,7 +202,7 @@ class App:
 
     def start(self, loop: bool = False, question: str = ""):
         if question == "":
-            first_questions = []
+            first_questions: List[str] = []
         else:
             first_questions = [question]
         try:
@@ -218,7 +216,7 @@ class App:
                 print("Exiting...")
             quit(0)
 
-    async def question(self, questions: list[str]) -> str:
+    async def question(self, questions: List[str]) -> str:
         try:
             self.manager.answer_text = ""
             await self.manager.question_answer(questions)
@@ -229,7 +227,8 @@ class App:
             quit(0)
 
     def stdin_input(self) -> str:
-        piped_input = []
+        piped_input: List[str] = []
+        stdin_input: str = ""
 
         if sys.stdin is not None and not sys.stdin.isatty():
             for line in sys.stdin:

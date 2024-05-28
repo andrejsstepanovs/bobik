@@ -1,25 +1,27 @@
 from app.config import Configuration
 from langchain.agents.agent_types import AgentType
+from typing import List
+from app.settings import ModelConfig, IOInputConfig, IOOutputConfig
 
 
 class ApplicationState:
     def __init__(self, config: Configuration):
         self.config = config
-        self.is_hotkey_enabled = True
-        self.is_stopped = False
-        self.is_quiet = False
+        self.is_hotkey_enabled: bool = True
+        self.is_stopped: bool = False
+        self.is_quiet: bool = False
 
-        self.are_tools_enabled = None
-        self.input_model = None
-        self.output_model = None
-        self.llm_model = None
-        self.temperature = None
-        self.prompts = []
+        self.are_tools_enabled: bool = None
+        self.input_model: str = None
+        self.output_model: str = None
+        self.llm_model: str = None
+        self.temperature: float = None
+        self.prompts: List[str] = []
 
-        self.llm_agent_type = None
-        self.llm_model_options = None
-        self.input_model_options = None
-        self.output_model_options = None
+        self.llm_agent_type: str = None
+        self.llm_model_options: ModelConfig = None
+        self.input_model_options: IOInputConfig = None
+        self.output_model_options: IOOutputConfig = None
         self.reload()
 
     def reload(self):
@@ -42,7 +44,7 @@ class ApplicationState:
             ";".join(self.prompts),
         ))
 
-    def set_prompts(self, prompts: list):
+    def set_prompts(self, prompts: List[str]):
         for name in prompts:
             if name not in self.config.available_prompts:
                 raise ValueError(f"Prompt {name} not found in available prompts. Define them in my_config.yaml first")
@@ -56,7 +58,7 @@ class ApplicationState:
             raise ValueError(f"Model {llm} definition not found")
 
         self.llm_model = llm
-        self.llm_model_options = self.config.settings.models[self.llm_model]
+        self.llm_model_options = self.load_llm_options()
         if self.llm_model_options.agent_type is not None:
             self.set_llm_agent_type(self.llm_model_options.agent_type)
         else:
@@ -80,11 +82,11 @@ class ApplicationState:
 
     def set_input_model(self, model: str):
         self.input_model = model
-        self.input_model_options = self.config.settings.io_input.get(self.input_model)
+        self.input_model_options: IOInputConfig = self.config.settings.io_input.get(self.input_model)
 
     def set_output_model(self, model: str):
         self.output_model = model
-        self.output_model_options = self.config.settings.io_output.get(self.output_model)
+        self.output_model_options: IOOutputConfig = self.config.settings.io_output.get(self.output_model)
 
     def get_default_llm(self) -> str:
         for model, options in self.config.settings.models.items():
@@ -111,5 +113,5 @@ class ApplicationState:
             return self.config.settings.agent.temperature
         return 0
 
-    def load_llm_options(self) -> dict:
+    def load_llm_options(self) -> ModelConfig:
         return self.config.settings.models.get(self.llm_model)

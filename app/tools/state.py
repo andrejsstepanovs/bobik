@@ -13,7 +13,7 @@ class EndConversation(BaseTool):
         "'Please exit.', 'Stop conversation.', 'End discussion.', "
         "'Quit.', 'Exit.', 'Goodbye.', 'Fuck off' are used. "
     )
-    state: ApplicationState = None
+    state: ApplicationState
 
     def _run(
         self,
@@ -30,7 +30,7 @@ class RetrieveModels(BaseTool):
         "Returns all available model names that can be used using switch_model() tool. "
         "Tool returns json array with values. "
     )
-    config: Configuration = None
+    config: Configuration
 
     def _run(
         self,
@@ -55,8 +55,8 @@ class SwitchModel(BaseTool):
         "Use this tool when phrases like 'change model to', 'switch model' is used. "
         "Available can be retrieved using get_models() tool. "
     )
-    state: ApplicationState = None
-    config: Configuration = None
+    state: ApplicationState
+    config: Configuration
 
     def _run(
         self,
@@ -80,7 +80,7 @@ class ResetChat(BaseTool):
         "Use this tool when phrases like 'forget this conversation', "
         "'lets change the topic', 'forget about that' or similar is mentioned. "
     )
-    memory: ConversationBufferMemory = None
+    memory: ConversationBufferMemory
 
     def _run(
         self,
@@ -99,7 +99,7 @@ class SwitchInputMethod(BaseTool):
         "Use this tool for anything to do with input change. "
         "Available values are: 'text', 'voice', 'speech', 'listen'. "
     )
-    state: ApplicationState = None
+    state: ApplicationState
 
     def _run(
         self,
@@ -126,7 +126,7 @@ class SwitchOutputMethod(BaseTool):
         "Use this tool for anything to do with output change or desired response method. "
         "Available values are: 'text', 'voice', 'speech', 'speak'. "
     )
-    state: ApplicationState = None
+    state: ApplicationState
 
     def _run(
         self,
@@ -152,7 +152,7 @@ class SetToolUsage(BaseTool):
         "Use tool with value 'No' when phrases like 'Dont use tools', 'No tools', 'No function calling' are used. "
         "Available values are: 'Yes', 'No'. "
     )
-    state: ApplicationState = None
+    state: ApplicationState
 
     def _run(
         self,
