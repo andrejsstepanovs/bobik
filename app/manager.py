@@ -48,6 +48,7 @@ class ConversationManager:
         self.state = state
         self.collector = collector
         self.response = response
+        self.answer_text = ""
         self.current_state_hash = None
         self.user_input = UserInput(config=self.config, state=self.state, transcript_collector=self.collector, beep=self.beep)
 
@@ -142,11 +143,11 @@ class ConversationManager:
                     text = str(self.agent.memory.chat_memory) + "\n" + text
 
                 response = self.agent.ask_question(text=text, stream=stream)
-                response_text = self.write_response(agent_name=self.config.agent_name, stream=stream, agent_response=response, agent=self.agent, is_quiet=self.state.is_quiet)
-                self.add_text_to_history(self.config.agent_name, response_text)
+                self.answer_text = self.write_response(agent_name=self.config.agent_name, stream=stream, agent_response=response, agent=self.agent, is_quiet=self.state.is_quiet)
+                self.add_text_to_history(self.config.agent_name, self.answer_text)
                 if self.state.is_stopped:
                     break
-                self.response.respond(response_text)
+                self.response.respond(self.answer_text)
                 self.response.wait_for_audio_process()
                 self.user_input.question_text = ""
                 break

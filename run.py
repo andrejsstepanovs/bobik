@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import sys
 # get rid of deprecation warning stdout.
 import warnings ; warnings.warn = lambda *args,**kwargs: None
 from app.app import App
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     app.load_options()
     app.load_state_change_parser()
 
-    loop, quiet, first_question = app.process_arguments()
+    loop, quiet, first_question = app.process_arguments(sys.argv[1:])
     stdin_input = app.stdin_input()
 
     if quiet:

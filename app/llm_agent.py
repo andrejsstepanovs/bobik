@@ -50,6 +50,11 @@ class LargeLanguageModelAgent:
                 return_messages=return_messages,
             )
 
+    def clear_memory(self):
+        if self.memory:
+            self.memory.clear()
+        self.load_memory(force=True)
+
     def initialize_prompt(self):
         prompts_changed = set(self.loaded_prompts) != set(self.state.prompts)
         if prompts_changed:

@@ -160,9 +160,8 @@ class App:
         print("  - > summarize the story")
         print("  - > quit")
 
-    def process_arguments(self) -> tuple[bool, bool, str]:
+    def process_arguments(self, initial_arg_phrases: list[str]) -> tuple[bool, bool, str]:
         first_question = ""
-        initial_arg_phrases = sys.argv[1:]
         args_len = len(initial_arg_phrases)
         loop = True
         quiet = False
@@ -211,6 +210,10 @@ class App:
             if not self.state.is_quiet:
                 print("Exiting...")
             quit(0)
+
+    def question(self, question: str = "") -> str:
+        asyncio.run(self.manager.question_answer(question))
+        return self.manager.answer_text
 
     def stdin_input(self) -> str:
         piped_input = []
