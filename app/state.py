@@ -1,8 +1,7 @@
-from app.config import Configuration
-from langchain.agents.agent_types import AgentType
 from typing import List
-from app.settings import ModelConfig, IOInputConfig, IOOutputConfig
-
+from langchain.agents.agent_types import AgentType
+from .config import Configuration
+from .settings import ModelConfig, IOInputConfig, IOOutputConfig
 
 class ApplicationState:
     def __init__(self, config: Configuration):
@@ -25,13 +24,12 @@ class ApplicationState:
         self.reload()
 
     def reload(self):
-        self.set_llm_agent_type(self.get_default_llm_agent_type())
         self.set_llm_model(self.get_default_llm())
         self.set_input_model(self.get_default_input_model())
         self.set_output_model(self.get_default_output_model())
 
     def get_hash(self) -> str:
-        return hash((
+        attributes = (
             self.is_stopped,
             self.is_quiet,
             self.input_model,
@@ -42,16 +40,12 @@ class ApplicationState:
             self.llm_agent_type,
             self.temperature,
             ";".join(self.prompts),
-        ))
+        )
+        return str(hash(attributes))
 
     def set_prompts(self, prompts: List[str]):
-        for name in prompts:
-            if name not in self.config.available_prompts:
-                raise ValueError(f"Prompt {name} not found in available prompts. Define them in my_config.yaml first")
-            self.prompts.append(self.config.available_prompts[name])
-
-    def set_llm_agent_type(self, llm_agent_type: str):
-        self.llm_agent_type = llm_agent_type
+        available_prompts = self.config.available_prompts
+        self.prompts = [available_prompts[name] for name in prompts if name in available_prompts]
 
     def set_llm_model(self, llm: str):
         if llm not in self.config.settings.models:
@@ -59,38 +53,24 @@ class ApplicationState:
 
         self.llm_model = llm
         self.llm_model_options = self.load_llm_options()
-        if self.llm_model_options.agent_type is not None:
-            self.set_llm_agent_type(self.llm_model_options.agent_type)
-        else:
-            self.set_llm_agent_type(self.get_default_llm_agent_type())
+        self.set_llm_agent_type(self.llm_model_options.agent_type or self.get_default_llm_agent_type())
+        self.temperature = self.llm_model_options.temperature or self.get_default_temperature()
+        self.are_tools_enabled = self.llm_model_options.tools_enabled or self.get_default_tools_are_enabled()
+        self.set_prompts(self.llm_model_options.prompts or self.config.settings.agent.prompts)
 
-        if self.llm_model_options.temperature is not None:
-            self.temperature = self.llm_model_options.temperature
-        else:
-            self.temperature = self.get_default_temperature()
-
-        if self.llm_model_options.tools_enabled is not None:
-            self.are_tools_enabled = self.llm_model_options.tools_enabled
-        else:
-            self.are_tools_enabled = self.get_default_tools_are_enabled()
-
-        self.prompts = []
-        if self.llm_model_options.prompts is not None:
-            self.set_prompts(self.llm_model_options.prompts)
-        else:
-            self.set_prompts(self.config.settings.agent.prompts)
+    def set_llm_agent_type(self, llm_agent_type: str):
+        self.llm_agent_type = llm_agent_type
 
     def set_input_model(self, model: str):
         self.input_model = model
-        self.input_model_options: IOInputConfig = self.config.settings.io_input.get(self.input_model)
+        self.input_model_options = self.config.settings.io_input.get(self.input_model)
 
     def set_output_model(self, model: str):
         self.output_model = model
-        self.output_model_options: IOOutputConfig = self.config.settings.io_output.get(self.output_model)
+        self.output_model_options = self.config.settings.io_output.get(self.output_model)
 
     def get_default_llm(self) -> str:
-        for model, options in self.config.settings.models.items():
-            return model
+        return next(iter(self.config.settings.models))
 
     def get_default_input_model(self) -> str:
         return "text"
@@ -99,19 +79,13 @@ class ApplicationState:
         return "write"
 
     def get_default_llm_agent_type(self) -> str:
-        if self.config.settings.agent.agent_type is not None:
-            return self.config.settings.agent.agent_type
-        return AgentType.CONVERSATIONAL_REACT_DESCRIPTION
+        return self.config.settings.agent.agent_type or AgentType.CONVERSATIONAL_REACT_DESCRIPTION
 
     def get_default_tools_are_enabled(self) -> bool:
-        if self.config.settings.agent.tools_enabled is not None:
-            return self.config.settings.agent.tools_enabled
-        return True
+        return self.config.settings.agent.tools_enabled or True
 
     def get_default_temperature(self):
-        if self.config.settings.agent.temperature is not None:
-            return self.config.settings.agent.temperature
-        return 0
+        return self.config.settings.agent.temperature or 0
 
     def load_llm_options(self) -> ModelConfig:
         return self.config.settings.models.get(self.llm_model)

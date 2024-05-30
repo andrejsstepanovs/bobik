@@ -3,41 +3,17 @@ import subprocess
 import requests
 import threading
 from pynput import keyboard
-from pynput.keyboard import Key
-import time
 import urllib.parse
-from app.config import Configuration
-from app.state import ApplicationState
-from app.parsers import print_text
-
-
-class KeyPressHandler:
-    def __init__(self, audio_process):
-        self.audio_process = audio_process
-        self.stop_event = threading.Event()
-        self.listener = None
-        self.last_ctrl_press_time: float = 0
-
-    def handle_double_ctrl(self, key):
-        if key == Key.alt_l or key == Key.alt_r:
-            current_time: float = time.time()
-            if current_time - self.last_ctrl_press_time < 0.5:
-                self.stop_handler()
-                return False  # Stop the listener
-            self.last_ctrl_press_time = current_time
-
-    def stop_handler(self):
-        self.stop_event.set()
-        if self.audio_process:
-            self.audio_process.terminate()  # Stop the audio playback
-        if self.listener:
-            self.listener.stop()  # Stop the listener
+from .config import Configuration
+from .state import ApplicationState
+from .parsers import print_text
+from .alt import AltKeyDoublePressDetector
 
 
 class TextToSpeech:
     def __init__(self, config: Configuration, state: ApplicationState):
         self.audio_process = None
-        self.key_press_handler = None
+        self.key_press_handler: AltKeyDoublePressDetector = None
         self.config = config
         self.state = state
 
@@ -52,7 +28,7 @@ class TextToSpeech:
 
     def speak(self, text: str):
         if self.state.output_model_options.provider == "deepgram":
-            if self.config.deepgram_settings["api_key"] is None:
+            if self.config.api_keys["deepgram"] is None:
                 raise ValueError("Deepgram API key not found.")
 
             if not self.is_installed("ffplay"):
@@ -73,7 +49,12 @@ class TextToSpeech:
                 print("Failed to start ffplay")
                 return
 
-            self.key_press_handler = KeyPressHandler(audio_process=self.audio_process)
+            self.key_press_handler: AltKeyDoublePressDetector = AltKeyDoublePressDetector(
+                threading_type=threading.Event(),
+                state=self.state,
+                keypress_count=self.config.keypress_count_stop_listening,
+                audio_process=self.audio_process,
+            )
 
             # Start the keyboard listener in a separate thread
             listener_thread = threading.Thread(target=self.start_listener)
@@ -83,11 +64,11 @@ class TextToSpeech:
             try:
                 stream_started = False
                 headers: dict = {
-                    "Authorization": f"Token {self.config.deepgram_settings['api_key']}",
+                    "Authorization": f"Token {self.config.api_keys['deepgram']}",
                     "Content-Type": "application/json"
                 }
                 # Call Deepgram API to get audio stream.
-                url: str = self.config.deepgram_settings['url']+"speak?" + urllib.parse.urlencode({
+                url: str = self.config.urls['deepgram']+"speak?" + urllib.parse.urlencode({
                     "model": self.state.output_model_options.model,
                     "performance": self.state.output_model_options.performance,
                     "encoding": self.state.output_model_options.encoding,
@@ -103,7 +84,7 @@ class TextToSpeech:
                             if not stream_started:
                                 stream_started = True
                                 print_text(self.state, text="Double-tap Alt to stop playback.")
-                            if self.key_press_handler.stop_event.is_set():
+                            if self.key_press_handler.threading.is_set():
                                 break
                 if self.audio_process is not None and self.audio_process.stdin:
                     self.audio_process.stdin.close()
@@ -119,7 +100,7 @@ class TextToSpeech:
                 raise e
 
     def start_listener(self):
-        listener = keyboard.Listener(on_press=self.key_press_handler.handle_double_ctrl)
+        listener = keyboard.Listener(on_press=self.key_press_handler.handle_key_press)
         self.key_press_handler.listener = listener
         listener.start()
         listener.join()

@@ -1,9 +1,11 @@
 from typing import List, Dict, Any
 from pydantic import BaseModel, validator
 
+
 class History(BaseModel):
     enabled: bool = False
     file: str = "history.txt"
+
 
 class Agent(BaseModel):
     prompts: List[str]
@@ -15,32 +17,38 @@ class Agent(BaseModel):
     max_iterations: int = 4
     tools_enabled: bool = True
 
+
 class Phrases(BaseModel):
     exit: List[str]
     with_tools: List[str]
     no_tools: List[str]
 
+
 class PreParser(BaseModel):
     enabled: bool = True
+
 
 class Tool(BaseModel):
     enabled: bool = False
     config_file: str = None
+
 
 class User(BaseModel):
     location: str
     name: str = "Human"
     timezone: str = None
 
+
 class ModelConfig(BaseModel):
     provider: str
     model: str
     agent_type: str = None
     temperature: float = None
-    synonyms: List[str] = None
+    synonyms: List[str] = []
     tools_enabled: bool = None
     prompts: List[str] = None
     base_url: str = None
+
 
 class IOInputConfig(BaseModel):
     provider: str
@@ -53,6 +61,7 @@ class IOInputConfig(BaseModel):
     endpointing: int = None
     smart_format: bool = None
 
+
 class IOOutputConfig(BaseModel):
     provider: str
     performance: str = None
@@ -60,9 +69,11 @@ class IOOutputConfig(BaseModel):
     sample_rate: int = None
     model: str = None
 
+
 class PreParsers(BaseModel):
     clipboard: PreParser
     time: PreParser
+
 
 class Tools(BaseModel):
     bing_search: Tool
@@ -82,6 +93,7 @@ class Tools(BaseModel):
 
     def get(self, name: str) -> Tool:
         return getattr(self, name)
+
 
 class Settings(BaseModel):
     agent: Agent

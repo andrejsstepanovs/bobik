@@ -1,6 +1,7 @@
-from app.config import Configuration
-from app.state import ApplicationState
-from app.my_print import print_text
+from typing import Any, Dict, Type
+from .config import Configuration
+from .state import ApplicationState
+from .my_print import print_text
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import GoogleGenerativeAI
@@ -13,69 +14,57 @@ class LanguageModelProvider:
         self.state = state
         self.config = config
 
-    def get_model(self):
-        if self.state.llm_model_options.model == "":
-            raise ValueError("No model specified.")
+    def get_model(self) -> Any:
+        provider_name = self.state.llm_model_options.provider
+        model_name = self.state.llm_model_options.model
+        temperature = self.state.temperature
 
-        provider_name: str = self.state.llm_model_options.provider
-        model_name: str = self.state.llm_model_options.model
+        print_text(
+            state=self.state,
+            text=f"Model: {self.state.llm_model}, LLM: {model_name}, Provider: {provider_name}, Temp: {self.config.agent_temperature}"
+        )
 
-        print_text(state=self.state, text=f"Model: {self.state.llm_model}, LLM: {model_name}, Provider: {provider_name}, Temp: {self.config.agent_temperature}")
+        models: Dict[str, Type] = {
+            "google": GoogleGenerativeAI,
+            "mistral": ChatMistralAI,
+            "groq": ChatGroq,
+            "openai": ChatOpenAI,
+            "openai_custom": ChatOpenAI,
+            "lm_studio": ChatOpenAI,
+            "ollama": Ollama,
+        }
 
-        if provider_name == "google" and self.config.google_settings["api_key"] is not None:
-            return GoogleGenerativeAI(
-                model=model_name,
-                temperature=self.state.temperature,
-                google_api_key=self.config.google_settings["api_key"],
-            )
+        model_class = models.get(provider_name)
+        if model_class is None:
+            raise ValueError(f"Provider {provider_name} is not supported.")
 
-        if provider_name == "mistral" and self.config.mistral_settings["api_key"] is not None:
-            return ChatMistralAI(
-                model_name=model_name,
-                temperature=self.state.temperature,
-                mistralai_api_key=self.config.mistral_settings["api_key"],
-            )
+        common_params = {
+            "model": model_name,
+            "temperature": temperature,
+        }
 
-        if provider_name == "groq" and self.config.groq_settings["api_key"] is not None:
-            return ChatGroq(
-                model_name=model_name,
-                temperature=self.state.temperature,
-                groq_api_key=self.config.groq_settings["api_key"],
-            )
+        provider_specific_params = {
+            "google": {"google_api_key": self.config.api_keys["google"]},
+            "mistral": {"mistralai_api_key": self.config.api_keys["mistral"]},
+            "groq": {"groq_api_key": self.config.api_keys["groq"]},
+            "openai": {"openai_api_key": self.config.api_keys["openai"]},
+            "openai_custom": {
+                "base_url": self.config.urls["openai_custom"],
+                "openai_api_key": self.config.api_keys["openai_custom"],
+            },
+            "lm_studio": {
+                "base_url": self.config.urls["lm_studio"],
+                "openai_api_key": "not-needed",
+                "max_tokens": 4096,
+            },
+            "ollama": {
+                "base_url": self.config.urls["ollama"],
+                # "max_tokens": 8192,
+            },
+        }
 
-        if provider_name == "openai" and self.config.openai_settings["api_key"] is not None:
-            return ChatOpenAI(
-                model=model_name,
-                temperature=self.state.temperature,
-                openai_api_key=self.config.openai_settings["api_key"],
-            )
-
-        if provider_name == "openai_custom" and self.config.custom_provider_settings["api_key"] is not None and self.config.custom_provider_settings["base_url"] is not None:
-            token: str = self.config.custom_provider_settings["api_key"]
-            model: ChatOpenAI = ChatOpenAI(
-                model=model_name,
-                temperature=self.state.temperature,
-                base_url=self.config.custom_provider_settings["base_url"],
-                openai_api_key=token,
-            )
+        try:
+            model = model_class(**common_params, **provider_specific_params[provider_name])
             return model
-
-        if provider_name == "lm_studio" and self.config.lmstudio_provider_settings["base_url"] is not None:
-            model: ChatOpenAI = ChatOpenAI(
-                temperature=self.state.temperature,
-                base_url=self.config.lmstudio_provider_settings["base_url"],
-                openai_api_key="not-needed",
-                max_tokens=4096,
-            )
-            return model
-
-        if provider_name == "ollama" and self.config.ollama_settings["enabled"]:
-            model: Ollama = Ollama(
-                model=model_name,
-                temperature=self.state.temperature,
-                base_url=self.config.ollama_settings["url"],
-                #max_tokens=8192,
-            )
-            return model
-
-        raise ValueError(f"model {self.state.llm_model} was not found. Probably it dont have api key set.")
+        except KeyError:
+            raise ValueError(f"API key for provider {provider_name} is missing.")

@@ -1,31 +1,18 @@
 import time
-import traceback
-from app.parsers import (
-    format_text,
-    check_text_for_phrases,
-    split_text_into_words,
-    ClipboardContentParser,
-    CurrentTimeAndDateParser,
-    StateTransitionParser,
-)
-from langchain_core.runnables.utils import AddableDict
-from app.tool_loader import ToolLoader
-from app.config import Configuration
-from app.state import ApplicationState
-from app.transcript import Transcript
-from app.io_output import TextToSpeech
-from app.llm_agent import LargeLanguageModelAgent
-from app.pkg.beep import BeepGenerator
-from app.llm_provider import LanguageModelProvider
-from app.io_input import UserInput
-from app.my_print import print_text
 from typing import List
-import inspect
-from langchain_core.messages import AIMessage
 from langchain_core.messages import BaseMessage
-from langchain_core.messages.ai import AIMessage as AIMessage2
-from langchain_core.messages.ai import BaseMessage as BaseMessage2
-
+from langchain_core.runnables.utils import AddableDict
+from .parsers import format_text, ClipboardContentParser, CurrentTimeAndDateParser, StateTransitionParser
+from .tool_loader import ToolLoader
+from .config import Configuration
+from .state import ApplicationState
+from .transcript import Transcript
+from .io_output import TextToSpeech
+from .llm_agent import LargeLanguageModelAgent
+from .pkg.beep import BeepGenerator
+from .llm_provider import LanguageModelProvider
+from .io_input import UserInput
+from .my_print import print_text
 
 class ConversationManager:
     def __init__(
@@ -40,28 +27,36 @@ class ConversationManager:
             response: TextToSpeech,
             beep: BeepGenerator,
     ):
-        self.beep = beep
-        self.parser = parser
-        self.agent = agent
-        self.provider = provider
-        self.tool_loader = tool_loader
+        # Initialize configuration and state
         self.config = config
         self.state = state
+
+        # Initialize components related to language processing
+        self.agent = agent
+        self.provider = provider
+        self.parser = parser
+
+        # Initialize components related to interaction and tools
         self.collector = collector
+        self.tool_loader = tool_loader
         self.response = response
+        self.beep = beep
+
+        # Initialize conversation-specific attributes
         self.answer_text = ""
         self.current_state_hash = None
-        self.user_input = UserInput(config=self.config, state=self.state, transcript_collector=self.collector, beep=self.beep)
+
+        # Initialize user input handler
+        self.user_input = self._create_user_input()
+
+    def _create_user_input(self):
+        return UserInput(config=self.config, state=self.state, transcript_collector=self.collector, beep=self.beep)
 
     def reload_agent(self, force: bool = False):
-        if self.current_state_hash is None or self.current_state_hash != self.state.get_hash():
+        if self.current_state_hash != self.state.get_hash() or force:
             self.current_state_hash = self.state.get_hash()
-            force = True
-
-        if force:
             print_text(state=self.state, text="Loading LLM...")
             self.agent.reload()
-
         return self.agent
 
     def clear_memory(self):
@@ -75,41 +70,33 @@ class ConversationManager:
             if who == self.config.agent_name:
                 self.agent.memory.save_context({"input": self.user_input.question_text}, {"output": text})
 
-        if self.config.history_file is not None and self.config.history_file != "":
+        if self.config.history_file:
             with open(self.config.history_file, "a") as file:
                 datetime = time.strftime("%Y-%m-%d %H:%M:%S")
                 content = format_text(f"{datetime} {who}: {text}")
                 file.write(content+"\n")
 
     def pre_parse_question(self) -> tuple[bool, bool]:
-        if self.user_input.question_text.strip() == "":
+        if not self.user_input.question_text.strip():
             return False, False
 
-        state_changed: bool = False
-        stop: bool = False
         state_changed, stop = self.parser.quick_state_change(self.user_input.question_text)
         if state_changed or stop:
             return state_changed, stop
 
         input_was_changed: bool = False
-        if "pre-parsers" in self.config.settings:
-            if self.config.settings.pre_parsers.clipboard.enabled:
-                if check_text_for_phrases(state=self.state, contains=True, phrases=["clipboard"], question=self.user_input.question_text):
-                    changed: bool = False
-                    out: str = ""
-                    changed, out = ClipboardContentParser().parse(self.user_input.question_text)
-                    if changed:
-                        input_was_changed = True
-                        self.user_input.question_text = out
+        if self.config.settings.pre_parsers.clipboard.enabled:
+            changed, out = ClipboardContentParser().parse(self.user_input.question_text)
+            if changed:
+                input_was_changed = True
+                self.user_input.question_text = out
 
-            if self.config.settings.pre_parsers.time.enabled:
-                time_parser = CurrentTimeAndDateParser(timezone=self.config.prompt_replacements["timezone"], state=self.state)
-                changed: bool = False
-                out: str = ""
-                changed, out = time_parser.parse(self.user_input.question_text)
-                if changed:
-                    input_was_changed = True
-                    self.user_input.question_text = out
+        if self.config.settings.pre_parsers.time.enabled:
+            time_parser = CurrentTimeAndDateParser(timezone=self.config.prompt_replacements["timezone"], state=self.state)
+            changed, out = time_parser.parse(self.user_input.question_text)
+            if changed:
+                input_was_changed = True
+                self.user_input.question_text = out
 
         if input_was_changed:
             self.add_text_to_history("Question pre-parser", self.user_input.question_text)
@@ -117,7 +104,7 @@ class ConversationManager:
         return False, False
 
     async def main_loop(self, first_question: list[str] = None):
-        while self.state.is_stopped is False:
+        while not self.state.is_stopped:
             stop = await self.question_answer(first_question)
             first_question = None
             if stop:
@@ -126,29 +113,14 @@ class ConversationManager:
     async def question_answer(self, first_question: list[str] = None) -> bool:
         print_text(state=self.state, text=f"\033[93m{self.state.input_model}\033[0m → \033[91;1;4m{self.state.llm_model}\033[0m ({self.state.llm_model_options.model}) → \033[93m{self.state.output_model}\033[0m")
 
-        if first_question is not None and len(first_question) > 0:
-            i: int = len(first_question)
+        if first_question:
             for question in first_question:
                 self.user_input.handle_full_sentence(question)
-                i -= 1
-                if i == 0:
-                    break
-                self.user_input.handle_full_sentence(question)
-                self.add_text_to_history(self.config.agent_name, "Got it.", force=True)
-
-            final_question: str = " ".join(first_question)
-            trimmed_first_question: str = final_question
-            if len(final_question) > 100:
-                words: List[str] = split_text_into_words(final_question)
-                trimmed_first_question = " ".join(words[:15]) + " (..)"
-
-            print_text(state=self.state, text=f"{self.config.user_name}: {trimmed_first_question}")
+            print_text(state=self.state, text=f"{self.config.user_name}: {' '.join(first_question)}")
         else:
             await self.user_input.get_input()
 
         self.add_text_to_history(self.config.user_name, self.user_input.question_text)
-        state_changed: bool = False
-        stop: bool = False
         state_changed, stop = self.pre_parse_question()
         if state_changed:
             self.reload_agent(force=state_changed)
@@ -156,18 +128,16 @@ class ConversationManager:
         if stop:
             return True
 
-        tries: int = 0
+        tries = 0
         while tries < self.config.retry_settings["max_tries"]:
             try:
-                stream: bool = not self.state.is_quiet and not self.state.are_tools_enabled
-                text: str = self.user_input.question_text
-
-                # no agent mode history feature in langchain don't work. It is there, but dont work. Prepending history manually.
+                stream = not self.state.is_quiet and not self.state.are_tools_enabled
+                text = self.user_input.question_text
                 if not self.state.are_tools_enabled:
                     text = str(self.agent.memory.chat_memory) + "\n" + text
 
-                response: str = self.agent.ask_question(text=text, stream=stream)
-                self.answer_text = self.write_response(agent_name=self.config.agent_name, stream=stream, agent_response=response, agent=self.agent, is_quiet=self.state.is_quiet)
+                response = self.agent.ask_question(text=text, stream=stream)
+                self.answer_text = self.write_response(agent_name=self.config.agent_name, stream=stream, agent_response=response, is_quiet=self.state.is_quiet)
                 self.add_text_to_history(self.config.agent_name, self.answer_text)
                 if self.state.is_stopped:
                     break
@@ -180,49 +150,38 @@ class ConversationManager:
                     print("OK...")
                 break
             except Exception as e:
-                tb: str = traceback.format_exc()
-                print_text(state=self.state, text=tb)
-                sleep_sec: float = self.config.retry_settings["sleep_seconds_between_tries"]
-                print_text(state=self.state, text=f"Error processing LLM: {e}")
+                print_text(state=self.state, text=str(e))
+                sleep_sec = self.config.retry_settings["sleep_seconds_between_tries"]
                 print_text(state=self.state, text=f"Sleep and try again after: {sleep_sec} sec")
                 tries += 1
                 time.sleep(sleep_sec)
 
     @staticmethod
-    def write_response(agent: LargeLanguageModelAgent, is_quiet: bool, agent_name: str, stream: bool, agent_response) -> str:
+    def write_response(is_quiet: bool, agent_name: str, stream: bool, agent_response) -> str:
         response: List[str] = []
-        if not stream:
-            txt: str = response_to_str(response=agent_response, is_quiet=is_quiet)
-            response.append(txt)
-            if is_quiet:
-                print(txt)
-            else:
-                print(f"{agent_name}: {txt}")
-        else:
+        if stream:
             if not is_quiet:
                 print(f"{agent_name}: ", end="")
-
             for chunk in agent_response:
-                print(response_to_str(response=chunk, is_quiet=is_quiet), end="", flush=True)
-                response.append(str(chunk).strip(" "))
+                txt = response_to_str(response=chunk, is_quiet=is_quiet)
+                print(txt, end="", flush=True)
+                response.append(txt.strip())
             print("")
+        else:
+            txt = response_to_str(response=agent_response, is_quiet=is_quiet)
+            response.append(txt)
+            print(txt if is_quiet else f"{agent_name}: {txt}")
+
         return " ".join(response)
+
 
 def response_to_str(response, is_quiet: bool) -> str:
     if isinstance(response, BaseMessage):
         return response.content
     if isinstance(response, AddableDict):
         if "output" not in response:
-            if "steps" in response:
-                if not is_quiet:
-                    return "\nThinking..."
-                else:
-                    return ""
-
-    if "output" in response:
-        return response["output"]
-
-    if len(response) != len(str(response)):
-        raise ValueError(f"Unknown response type: {type(response)}")
-
-    return response
+            if "steps" in response and not is_quiet:
+                return "\nThinking..."
+            else:
+                return ""
+    return response["output"] if "output" in response else str(response)

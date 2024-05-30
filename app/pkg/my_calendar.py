@@ -4,8 +4,8 @@ import zipfile
 import tempfile
 import icalendar
 import datetime
-import numpy
 import pytz
+import numpy
 import pickle
 import recurring_ical_events
 import app.state as AppStatus
@@ -50,7 +50,7 @@ class Calendar:
                 if len(sorted_files) == 0:
                     print_text(state=self.state, text=f"No files found for calendar {calendar['name']}")
                     continue
-                for file in sorted_files:    
+                for file in sorted_files:
                     file_name, file_extension = os.path.splitext(file)
                     if file_extension == ".zip":
                         with zipfile.ZipFile(file_name+file_extension, 'r') as zip_file:
@@ -108,7 +108,7 @@ class Calendar:
 
                 start = self.convert_to_datetime(event.get("DTSTART"), self.min_time)
                 end = self.convert_to_datetime(event.get("DTEND"), self.max_time)
-                if end is None:    
+                if end is None:
                     end: datetime.datetime = start
                     end: datetime.datetime = datetime.datetime.combine(end, datetime.datetime.max.time())
                     end: datetime.datetime = end.replace(tzinfo=datetime.timezone.utc)

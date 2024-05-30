@@ -1,8 +1,8 @@
-import requests
 from typing import Optional, Dict, List
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
-from langchain_community.utilities.bing_search import BingSearchAPIWrapper
+import json
+import requests
 
 
 class NewsRetrievalTool(BaseTool):
@@ -21,15 +21,23 @@ class NewsRetrievalTool(BaseTool):
         "Output is a JSON array of the query results."
     )
     results_count: int = 10
-    bing_search_url: str = None
-    subscription_key: str = None
+    bing_search_url: str
+    subscription_key: str
 
     def _run(
         self,
         search_query: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
-        """Use the tool."""
+        """Retrieve the latest news articles based on a search query.
+
+        Args:
+            search_query: A string representing the search query.
+            run_manager: An optional CallbackManagerForToolRun object.
+
+        Returns:
+            A JSON string representing a list of news articles.
+        """
 
         search_parameters: Dict[str, str] = {
             'mkt': 'en-US',
@@ -52,24 +60,19 @@ class NewsRetrievalTool(BaseTool):
             search_parameters['freshness'] = 'Week'
             url_suffix: str = "/search"
 
-        url: str = self.bing_search_url + url_suffix
+        url: str = f"{self.bing_search_url}{url_suffix}"
 
-        response: requests.Response = requests.get(
-            url,
-            headers={'Ocp-Apim-Subscription-Key': self.subscription_key},
-            params=search_parameters
-        )
+        headers = {'Ocp-Apim-Subscription-Key': self.subscription_key}
+        response = requests.get(url, headers=headers, params=search_parameters)
         response.raise_for_status()
-        news_articles: dict = response.json()
+        news_articles: dict = json.loads(response.text)
 
         if len(news_articles) == 0:
             return "Didn't find any news articles"
 
-        formatted_response: List[dict] = []
-        article_number: int = 1
-        for article in news_articles["value"]:
+        formatted_news_articles: List[dict] = []
+        for article_number, article in enumerate(news_articles["value"], start=1):
             article_content: dict = {'number': article_number, 'title': article['name']}
-            article_number += 1
             if 'isBreakingNews' in article:
                 article_content['isBreakingNews'] = article['isBreakingNews']
             if 'description' in article:
@@ -78,6 +81,6 @@ class NewsRetrievalTool(BaseTool):
                 article_content['published'] = article['datePublished']
             if 'provider' in article and len(article['provider']) > 0:
                 article_content['site'] = article['provider'][0]['name']
-            formatted_response.append(article_content)
+            formatted_news_articles.append(article_content)
 
-        return str(formatted_response)
+        return json.dumps(formatted_news_articles)

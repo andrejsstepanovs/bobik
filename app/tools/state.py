@@ -8,18 +8,9 @@ from langchain.memory import ConversationBufferMemory
 
 class EndConversation(BaseTool):
     name: str = "end_conversation"
-    description: str = (
-        "Use tool when phrases like "
-        "'Please exit.', 'Stop conversation.', 'End discussion.', "
-        "'Quit.', 'Exit.', 'Goodbye.', 'Fuck off' are used. "
-    )
-    state: ApplicationState
+    description: str = "Use tool when phrases like 'Please exit.', 'Stop conversation.', etc., are used."
 
-    def _run(
-        self,
-        model: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
+    def _run(self, model: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         self.state.is_stopped = True
         return "Exit"
 
@@ -32,17 +23,9 @@ class RetrieveModels(BaseTool):
     )
     config: Configuration
 
-    def _run(
-        self,
-        model: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
-        models = []
-        for model_name, options in self.config.settings.models.items():
-            models.append(model_name)
-            for synonym in options.synonyms:
-                models.append(synonym)
-
+    def _run(self, model: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        models = [model_name for model_name, options in self.config.settings.models.items()]
+        models.extend(synonym for options in self.config.settings.models.values() for synonym in options.synonyms)
         return str(models)
 
 
@@ -58,20 +41,12 @@ class SwitchModel(BaseTool):
     state: ApplicationState
     config: Configuration
 
-    def _run(
-        self,
-        model: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
+    def _run(self, model: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         for name, options in self.config.settings.models.items():
-            all_names_with_synonyms = [name]
-            if len(options.synonyms) > 0:
-                all_names_with_synonyms.extend(options.synonyms)
-            if model in all_names_with_synonyms:
+            if model in [name] + options.synonyms:
                 self.state.set_llm_model(name)
-                return "Changed to " + model
-
-        return "Not changed. Given model dont exist: '"+model+"'"
+                return f"Changed to {model}"
+        return f"Not changed. Given model does not exist: '{model}'"
 
 
 class ResetChat(BaseTool):
@@ -82,13 +57,8 @@ class ResetChat(BaseTool):
     )
     memory: ConversationBufferMemory
 
-    def _run(
-        self,
-        something: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
+    def _run(self, something: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         self.memory.clear()
-
         return "Cleared this conversation."
 
 
@@ -101,20 +71,10 @@ class SwitchInputMethod(BaseTool):
     )
     state: ApplicationState
 
-    def _run(
-        self,
-        method: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
-        if method in ["text", "voice", "speech", "deepgram", "listen"]:
-            if method == "text":
-                self.state.set_input_model("text")
-                return "Input Changed to " + "text"
-            else:
-                self.state.set_input_model("listen")
-                return "Input changed to " + "listen"
-
-        return f"Input was not changed. Given method dont exist: '{method}'"
+    def _run(self, method: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        input_model = "text" if method in ["text", "voice", "speech", "deepgram", "listen"] else method
+        self.state.set_input_model(input_model)
+        return f"Input changed to {input_model}"
 
 
 class SwitchOutputMethod(BaseTool):
@@ -128,20 +88,10 @@ class SwitchOutputMethod(BaseTool):
     )
     state: ApplicationState
 
-    def _run(
-        self,
-        method: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
-        if method in ["text", "write", "voice", "speech", "speak"]:
-            if method == "text" or method == "write":
-                self.state.set_output_model("text")
-                return "Output changed to " + "text"
-            else:
-                self.state.set_output_model("speak")
-                return "Output changed to " + "speak"
-
-        return f"Output was not changed. Given method dont exist: '{method}'"
+    def _run(self, method: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        output_model = "text" if method in ["text", "write"] else "speak"
+        self.state.set_output_model(output_model)
+        return f"Output changed to {output_model}"
 
 
 class SetToolUsage(BaseTool):
@@ -154,14 +104,6 @@ class SetToolUsage(BaseTool):
     )
     state: ApplicationState
 
-    def _run(
-        self,
-        use_tools: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
-        if use_tools.lower() in ["yes"]:
-            self.state.use_tools = True
-            return "Set to use tools."
-        else:
-            self.state.use_tools = False
-            return "Set to not use tools."
+    def _run(self, use_tools: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
+        self.state.use_tools = use_tools.lower() == "yes"
+        return "Set to use tools." if self.state.use_tools else "Set to not use tools."

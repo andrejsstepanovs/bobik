@@ -1,12 +1,13 @@
 import asyncio
 import logging
-import pyperclip
+import threading
 import os
-if os.name == 'nt':
-    from pyreadline import Readline
-else:
-    import readline
-
+from .alt import AltKeyDoublePressDetector
+from .config import Configuration
+from .state import ApplicationState
+from .transcript import Transcript
+from .pkg.beep import BeepGenerator
+from .my_print import print_text
 from deepgram import (
     DeepgramClient,
     DeepgramClientOptions,
@@ -14,16 +15,15 @@ from deepgram import (
     LiveOptions,
     Microphone,
 )
-from app.alt import AltKeyDoublePressDetector
-from app.config import Configuration
-from app.state import ApplicationState
-from app.transcript import Transcript
-from app.pkg.beep import BeepGenerator
-from app.my_print import print_text
+if os.name == 'nt':
+    from pyreadline import Readline
+else:
+    import readline
+
 
 async def listen_to_input(config: Configuration, state: ApplicationState, transcript_collector: Transcript, callback):
     if state.input_model_options.provider == "deepgram":
-        if config.deepgram_settings["api_key"] is None:
+        if config.api_keys["deepgram"] is None:
             raise Exception("Deepgram API key not set")
 
         if os.name == 'nt':
@@ -32,7 +32,7 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
         transcription_complete: asyncio.Event = asyncio.Event()
         try:
             client_config = DeepgramClientOptions(options={"keepalive": "true"}, verbose=logging.ERROR)
-            deepgram_client: DeepgramClient = DeepgramClient(api_key=config.deepgram_settings["api_key"], config=client_config)
+            deepgram_client: DeepgramClient = DeepgramClient(api_key=config.api_keys["deepgram"], config=client_config)
 
             deepgram_connection = deepgram_client.listen.asynclive.v("1")
             print_text(state=state, text="\033[93m" + "Listening..." + "\033[0m")
@@ -51,7 +51,7 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
                         full_sentence = full_sentence.strip()
                         print_text(state=state, text=f"{config.user_name}: \033[32;1m {full_sentence} \033[0m")
                         callback(full_sentence)
-                        transcript_collector.initialize()
+                        transcript_collector.clear_transcript()
                         transcription_complete.set()
 
             deepgram_connection.on(LiveTranscriptionEvents.Transcript, on_message)
@@ -63,7 +63,7 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
                 encoding=state.input_model_options.encoding,
                 channels=state.input_model_options.channels,
                 sample_rate=state.input_model_options.sample_rate,
-                endpointing=state.input_model_options.endpointing,
+                endpointing=str(state.input_model_options.endpointing),
                 smart_format=state.input_model_options.smart_format,
             )
 
@@ -83,6 +83,7 @@ async def listen_to_input(config: Configuration, state: ApplicationState, transc
     else:
         raise Exception("Unknown provider given")
 
+
 class UserInput:
     def __init__(self, config: Configuration, state: ApplicationState, transcript_collector: Transcript, beep: BeepGenerator):
         self.config = config
@@ -94,14 +95,20 @@ class UserInput:
     async def get_input(self):
         if self.state.input_model_options.provider != "text":
             if self.state.is_hotkey_enabled:
-                print_text(state=self.state, text="Double-tap 2 times and start talking")
+                keypress_count = 2
+                print_text(state=self.state, text=f"Double-tap {keypress_count} times and start talking")
                 if self.state.output_model == "deepgram":
                     print_text(state=self.state, text="And same to stop long playback.")
 
-                detector: AltKeyDoublePressDetector = AltKeyDoublePressDetector(app_state=self.state)
+                detector: AltKeyDoublePressDetector = AltKeyDoublePressDetector(
+                    threading_type=threading.Lock(),
+                    state=self.state,
+                    keypress_count=self.config.keypress_count_start_talking,
+                )
                 detector.start_key_listener()
 
             self.beep.play_beep()
+            self.transcript_collector.clear_transcript()
             await listen_to_input(
                 config=self.config,
                 state=self.state,
@@ -110,13 +117,6 @@ class UserInput:
             )
         else:
             text: str = input(f"{self.config.user_name}: ")
-            # split_text = text.split(":")
-            # if len(split_text) > 1:
-            #     clipboard_content: str = pyperclip.paste()
-            #     if clipboard_content != "" and text != clipboard_content and split_text[1].strip() in clipboard_content:
-            #         text = f"{text[0]}. Use clipboard."
-            #         pyperclip.copy("")
-
             self.handle_full_sentence(text)
 
     def handle_full_sentence(self, text: str):

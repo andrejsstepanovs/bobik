@@ -1,9 +1,9 @@
 import requests
-from typing import Optional, Any, Dict, List
+from datetime import datetime
+from typing import Optional, Dict, List
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from app.config import Configuration
-from datetime import datetime
 import dateparser
 
 
@@ -19,75 +19,48 @@ class WeatherTool(BaseTool):
     cache: dict = {}
     config: Configuration = None
 
-    def _run(
-        self,
-        date: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
+    def _run(self, date: str = None, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         """Use the tool."""
 
         now: datetime = datetime.now()
-        filter_date: Optional[datetime] = None
-        filter_date_date: str = ""
-        if date is not None and date != "":
-            filter_date = dateparser.parse(date)
-            if filter_date is not None:
-                filter_date_date = filter_date.strftime("%Y-%m-%d")
+        filter_date: Optional[datetime] = dateparser.parse(date) if date else None
+        filter_date_date: str = filter_date.strftime("%Y-%m-%d") if filter_date else now.strftime("%Y-%m-%d")
 
         if filter_date_date not in self.cache:
-            location: str = self.config.prompt_replacements["location"]
-            location = location.replace(",", "").replace(" ", "-")
+            location: str = self.config.prompt_replacements["location"].replace(",", "").replace(" ", "-")
             response: requests.Response = requests.get(f"https://wttr.in/{location}?format=j1")
 
-            current_time: str = now.strftime("%Y-%m-%d %H:%M")
-            weather_info: List[str] = [f"Current time is {current_time}"]
+            weather_info: List[str] = [f"Current time is {now.strftime('%Y-%m-%d %H:%M')}"]
+
             if response.status_code == 200:
                 data = response.json()
-                for area in data['nearest_area']:
-                    location_info: List[str] = []
-                    for location in area['areaName']:
-                        location_info.append(location['value'])
-                    for country in area['country']:
-                        location_info.append(country['value'])
-                    weather_info.append("Location: ".join(location_info))
-                    weather_info.append("")
+                location_info: List[str] = [area['value'] for area in data['nearest_area'][0]['areaName']] + [area['value'] for area in data['nearest_area'][0]['country']]
+                weather_info.extend(["Location: " + ", ".join(location_info), ""])
 
-                if filter_date is None or filter_date_date == now.strftime("%Y-%m-%d"):
-                    weather_info.append("# Current Weather:")
-                    for current_condition in data['current_condition']:
-                        description: Dict[str, Any] = current_condition['weatherDesc'][0]
-                        weather_info.append(f"- Condition: {description['value']}")
-                        weather_info.append(f"- Temperature (°C): {current_condition['temp_C']}")
-                        humidity: str = current_condition['humidity']
-                        cloudcover: str = current_condition['cloudcover']
-                        windspeedKmph: str = current_condition['windspeedKmph']
-                        weather_info.append(f"- Humidity: {humidity}")
-                        weather_info.append(f"- Cloud Cover (%): {cloudcover}")
-                        weather_info.append(f"- Wind Speed (km/h): {windspeedKmph}")
+                if not filter_date or filter_date_date == now.strftime("%Y-%m-%d"):
+                    current_condition = data['current_condition'][0]
+                    weather_info.extend([
+                        "# Current Weather:",
+                        f"- Condition: {current_condition['weatherDesc'][0]['value']}",
+                        f"- Temperature (°C): {current_condition['temp_C']}",
+                        f"- Humidity: {current_condition['humidity']}",
+                        f"- Cloud Cover (%): {current_condition['cloudcover']}",
+                        f"- Wind Speed (km/h): {current_condition['windspeedKmph']}",
+                    ])
 
                 weather_info.append("# Forecast:")
                 for current_condition in data['weather']:
-                    if filter_date is not None and filter_date_date != current_condition['date']:
+                    if filter_date and filter_date_date != current_condition['date']:
                         continue
                     weather_info.append(f"- {current_condition['date']}")
                     for description in current_condition['hourly']:
                         time: str = str(description['time']).zfill(4)
-                        chanceofrain: str = description['chanceofrain']
-                        weather_info.append(
-                            f"-- {time[:2]}:{time[2:]}: {description['weatherDesc'][0]['value']}, {description['tempC']}°C, {chanceofrain}% rain, {description['windspeedKmph']} km/h")
+                        weather_info.append(f"-- {time[:2]}:{time[2:]}: {description['weatherDesc'][0]['value']}, {description['tempC']}°C, {description['chanceofrain']}% rain, {description['windspeedKmph']} km/h")
 
             self.cache[filter_date_date] = "\n".join(weather_info)
 
         return self.cache[filter_date_date]
 
-    async def _arun(
-        self,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Any:
-        """Use the tool asynchronously.
-
-        Not implemented. Don't use it.
-        """
+    async def _arun(self, *args, **kwargs):
+        """Use the tool asynchronously. Not implemented."""
         raise NotImplementedError
-        #return await run_in_executor(None, self._run, *args, **kwargs)

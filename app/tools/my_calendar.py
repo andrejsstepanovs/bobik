@@ -1,6 +1,5 @@
 from typing import Optional, List
 from datetime import datetime
-from csv import reader
 import dateparser
 from langchain.tools import BaseTool
 from langchain_core.callbacks import CallbackManagerForToolRun
@@ -13,13 +12,15 @@ class CalendarEventTool(BaseTool):
     name: str = "calendar_events"
     description: str = (
         "Use this tool to fetch upcoming calendar events. "
-        "Tool have one optional argument that can have values like 'now', 'today', 'tomorrow' or specific date in format 'YYYY-MM-DD'."
+        "Tool has one optional argument that can have values like 'now', 'today', 'tomorrow' "
+        "or specific date in format 'YYYY-MM-DD'."
     )
+
     calendar: Calendar = None
 
     def _run(
         self,
-        date: str = "Today",
+        date: Optional[str] = "Today",
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         self.calendar.get_events()
@@ -27,30 +28,18 @@ class CalendarEventTool(BaseTool):
 
         now: datetime = datetime.now()
         current_time: str = now.strftime("%Y-%m-%d %H:%M")
-        output: List[str] = [
-            f"Current time is {current_time}",
-            "Here are calendar events:",
-        ]
+        output: List[str] = [f"Current time is {current_time}", "Here are calendar events:"]
 
-        filter_date: Optional[datetime] = None
-        if date is not None and date != "":
-            filter_date = dateparser.parse(date)
-            if filter_date is not None:
-                filter_date_date: str = filter_date.strftime("%Y-%m-%d")
+        filter_date = dateparser.parse(date) if date else None
 
         for event in events:
-            event_date: str = event["start"].strftime("%Y-%m-%d")
-            is_today: bool = current_time[:10] == event_date
-            if filter_date is not None and filter_date_date != event_date:
+            event_date = event["start"].strftime("%Y-%m-%d")
+            if filter_date and filter_date.strftime("%Y-%m-%d") != event_date:
                 continue
 
-            output.append("")
-            output.append("Date: " + event_date + (" (Today)" if is_today else ""))
-            output.append("Event: " + event["summary"].replace(",", " "))
-            output.append("Time: " + event["start"].strftime("%H:%M") + " - " + event["end"].strftime("%H:%M"))
-            calendar_name: str = event["calendar"]
-            if calendar_name.lower() != event["name"].lower():
-                calendar_name = calendar_name + " - " + event["name"]
-            output.append("Calendar: " + calendar_name)
+            output.append(f"\nDate: {event_date} {'(Today)' if now.date() == event['start'].date() else ''}")
+            output.append(f"Event: {event['summary'].replace(',', ' ')}")
+            output.append(f"Time: {event['start'].strftime('%H:%M')} - {event['end'].strftime('%H:%M')}")
+            output.append(f"Calendar: {event['calendar'] if event['calendar'].lower() != event['name'].lower() else event['name']}")
 
         return "\n".join(output).replace("`", "'")

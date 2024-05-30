@@ -3,20 +3,20 @@ import yaml
 import os
 import sys
 from dotenv import load_dotenv
-from app.manager import ConversationManager
-from app.io_output import TextToSpeech
-from app.config import Configuration
-from app.llm_provider import LanguageModelProvider
-from app.state import ApplicationState
-from app.settings import Settings
-from app.transcript import Transcript
-from app.tool_loader import ToolLoader
-from app.pkg.beep import BeepGenerator
-from app.llm_agent import LargeLanguageModelAgent
-from app.parsers import StateTransitionParser
 from typing import List
+from .manager import ConversationManager
+from .io_output import TextToSpeech
+from .config import Configuration, Settings
+from .llm_provider import LanguageModelProvider
+from .state import ApplicationState
+from .transcript import Transcript
+from .tool_loader import ToolLoader
+from .pkg.beep import BeepGenerator
+from .llm_agent import LargeLanguageModelAgent
+from .parsers import StateTransitionParser
 
 load_dotenv()
+
 
 class App:
     def __init__(self, config_file: str = ""):
@@ -39,10 +39,6 @@ class App:
         config_path: str = os.getenv("COMPUTER_CONFIG_FILE")
         if not config_path:
             raise Exception("COMPUTER_CONFIG_FILE environment variable not set. Check `my_config.yaml.example` file.")
-
-        if not os.path.exists(config_path):
-            raise Exception(f"{config_path} file not found")
-
         return self.load_settings(config_path)
 
     def load_settings(self, file_path: str) -> Settings:
@@ -66,14 +62,12 @@ class App:
     def load_manager(self):
         self.llm_provider = LanguageModelProvider(config=self.config, state=self.state)
         self.tool_provider = ToolLoader(config=self.config, state=self.state)
-
         self.llm_agent = LargeLanguageModelAgent(
             config=self.config,
-            llm_provider=self.llm_provider,
+            provider=self.llm_provider,
             state=self.state,
             function_provider=self.tool_provider
         )
-
         self.manager = ConversationManager(
             parser=self.state_change_parser,
             config=self.config,
@@ -93,15 +87,15 @@ class App:
         print("Available pre-parser commands:")
         print("  Switch between agent and normal mode.")
         print("  With agent:")
-        for phrase in self.config.with_tools_phrases:
+        for phrase in self.config["with_tools_phrases"]:
             print(f"    - {phrase}")
         print("")
         print("  No agent:")
-        for phrase in self.config.no_tools_phrases:
+        for phrase in self.config["no_tools_phrases"]:
             print(f"    - {phrase}")
         print("  ")
         print("  Quit:")
-        for phrase in self.config.exit_phrases:
+        for phrase in self.config.phrases["exit"]:
             print(f"    - {phrase}")
         print("")
         print("  Select model by typing its name.")
@@ -111,31 +105,31 @@ class App:
         for model_name, model_config in settings.models.items():
             if model_config.model is None or model_config.model == "":
                 continue
-            if model_config.provider == "google" and self.config.google_settings["api_key"] is None:
+            if model_config.provider == "google" and self.config.api_keys["google"] is None:
                 continue
-            if model_config.provider == "mistral" and self.config.mistral_settings["api_key"] is None:
+            if model_config.provider == "mistral" and self.config.api_keys["mistral"] is None:
                 continue
-            if model_config.provider == "groq" and self.config.groq_settings["api_key"] is None:
+            if model_config.provider == "groq" and self.config.api_keys["groq"] is None:
                 continue
-            if model_config.provider == "openai" and self.config.openai_settings["api_key"] is None:
+            if model_config.provider == "openai" and self.config.api_keys["openai"] is None:
                 continue
-            if model_config.provider == "openai_custom" and (self.config.openai_settings["api_key"] is None or self.config.custom_provider_settings["base_url"] is None):
+            if model_config.provider == "openai_custom" and (self.config.api_keys["custom_provider"] is None or self.config.urls["openai_custom"] is None):
                 continue
-            if model_config.provider == "lm_studio" and self.config.lmstudio_provider_settings["base_url"] is None:
+            if model_config.provider == "lm_studio" and self.config.urls["openai_custom"] is None:
                 continue
-            if model_config.provider == "ollama" and self.config.ollama_settings["enabled"]:
+            if model_config.provider == "ollama":
                 continue
             print(f"    - {model_name} ({model_config.provider} / {model_config.model})")
         print("")
         print("  Available Input methods:")
         for model_name, model_config in settings.io_input.items():
-            if model_config.provider == "deepgram_settings" and self.config.deepgram_settings["api_key"] is None:
+            if model_config.provider == "deepgram_settings" and self.config.api_keys["deepgram"] is None:
                 continue
             print(f"    - {model_name} ({model_config.provider} / {model_config.model})")
         print("")
         print("  Available Output methods:")
         for model_name, model_config in self.config.settings.io_output.items():
-            if model_config.provider == "deepgram_settings" and self.config.deepgram_settings["api_key"] is None:
+            if model_config.provider == "deepgram_settings" and self.config.api_keys["deepgram"] is None:
                 continue
             print(f"    - {model_name} ({model_config.provider} / {model_config.model}")
         print("")
@@ -166,37 +160,24 @@ class App:
         loop: bool = True
         quiet: bool = False
 
-        if args_len > 0:
-            i = 0
-            """It is important to use these flags before any following command parameters!"""
-            for phrase in initial_arg_phrases:
-                if phrase == "--once" or phrase == "--quit":
-                    loop = False
-                    i += 1
-                elif phrase == "--help":
-                    self.print_help()
-                    quit(0)
-                elif phrase == "--quiet":
-                    quiet = True
-                    self.state.is_quiet = quiet
-                    i += 1
-                else:
-                    break
-
-            for phrase in initial_arg_phrases[i:]:
-                found, must_exit = self.state_change_parser.quick_state_change(phrase.strip())
+        i = 0
+        while i < args_len:
+            if initial_arg_phrases[i] in ["--once", "--quit"]:
+                loop = False
+            elif initial_arg_phrases[i] == "--help":
+                self.print_help()
+                quit(0)
+            elif initial_arg_phrases[i] == "--quiet":
+                quiet = True
+                self.state.is_quiet = quiet
+            else:
+                found, must_exit = self.state_change_parser.quick_state_change(initial_arg_phrases[i].strip())
                 if not found:
                     break
-                i += 1
+            i += 1
 
-            if i > 0 and not quiet:
-                print(f"Got {i} args:", initial_arg_phrases[:i])
-
-            if len(initial_arg_phrases[i:]) > 0:
-                first_question = initial_arg_phrases[i:]
-                if isinstance(first_question, list):
-                    first_question = ' '.join(map(str, first_question))
-                first_question = first_question.strip()
+        if i < args_len:
+            first_question = ' '.join(initial_arg_phrases[i:]).strip()
 
         return loop, quiet, first_question
 

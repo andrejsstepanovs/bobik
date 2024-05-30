@@ -22,10 +22,7 @@ class DateTool(BaseTool):
     description: str = "Use this tool when you need to find current date."
 
     def _run(self, location: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        current_time: float = time.time()
-        current_struct_time: time.struct_time = time.localtime(current_time)
-        return_value: str = time.strftime("%Y-%m-%d", current_struct_time)
-        return return_value
+        return time.strftime("%Y-%m-%d")
 
 
 class DateTimeTool(BaseTool):
@@ -38,10 +35,7 @@ class DateTimeTool(BaseTool):
     )
 
     def _run(self, timezone: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        current_time: float = time.time()
-        current_struct_time: time.struct_time = time.localtime(current_time)
-        return_value: str = "Current date and time is: " + time.strftime("%Y-%m-%d %H:%M:%S", current_struct_time)
-        return return_value
+        return "Current date and time is: " + time.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class TextTool(BaseTool):
