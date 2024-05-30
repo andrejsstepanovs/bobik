@@ -1,8 +1,8 @@
 ---
 prompts:
   default: system_prompt.txt
+  code: /full_path_to/code_prompt.txt
   # private: /full_path_to/private_prompt.txt
-  # code: /full_path_to/code_prompt.txt
 history:
   # enable to store all questions and answers to file. Always appends (for now).
   enabled: false
