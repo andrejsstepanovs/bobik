@@ -19,6 +19,10 @@ def main() -> None:
     else:
         app.one_shot(question=question)
 
+    # example of programmatic use
+    # app.tool_provider.add_tool(mytool())
+    # answer = app.answer(questions=["agent", "code", "refactor following code", "CODE"])
+    # app.manager.clear_memory()
 
 if __name__ == "__main__":
     main()

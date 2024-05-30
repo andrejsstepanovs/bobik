@@ -99,7 +99,8 @@ models:
     # cat my_code.py > computer.py --once --quiet code light refactor following code > my_code.py
     # "code" <- this model definition (uses mistral with no tools + special code prompt)
     provider: mistral
-    model: open-mixtral-8x22b
+    #model: open-mixtral-8x22b
+    model: codestral-latest
     tools_enabled: false
     # set your custom prompt. needs to be defined on top.
     prompts:
