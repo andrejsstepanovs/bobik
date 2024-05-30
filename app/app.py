@@ -29,7 +29,7 @@ class App:
         self.settings: Settings = self.load_settings(config_file)
         self.config: Configuration = Configuration(settings=self.settings)
         self.state: ApplicationState = ApplicationState(config=self.config)
-        self.state_change_parser: StateTransitionParser = StateTransitionParser(config=self.config, state=self.state)
+        self.pre_parser: StateTransitionParser = StateTransitionParser(config=self.config, state=self.state)
 
     def load_settings(self, config_file: str = None) -> Settings:
         env_name = "BOBIK_CONFIG_FILE"
@@ -63,7 +63,7 @@ class App:
             function_provider=self.tool_provider
         )
         self.manager = ConversationManager(
-            parser=self.state_change_parser,
+            parser=self.pre_parser,
             config=self.config,
             state=self.state,
             provider=self.llm_provider,
@@ -165,7 +165,7 @@ class App:
                 quiet = True
                 self.state.is_quiet = quiet
             else:
-                found, must_exit = self.state_change_parser.quick_state_change(initial_arg_phrases[i].strip())
+                found = self.pre_parser.change_state(initial_arg_phrases[i].strip())
                 if not found:
                     break
             i += 1

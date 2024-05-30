@@ -92,7 +92,7 @@ class UserInput:
         self.beep = beep
         self.question_text = ""
 
-    async def get_input(self):
+    async def ask_input(self):
         if self.state.input_model_options.provider != "text":
             if self.state.is_hotkey_enabled:
                 keypress_count = 2
@@ -113,11 +113,14 @@ class UserInput:
                 config=self.config,
                 state=self.state,
                 transcript_collector=self.transcript_collector,
-                callback=self.handle_full_sentence,
+                callback=self.set,
             )
         else:
             text: str = input(f"{self.config.user_name}: ")
-            self.handle_full_sentence(text)
+            self.set(text)
 
-    def handle_full_sentence(self, text: str):
+    def set(self, text: str):
         self.question_text = text
+
+    def get(self) -> str:
+        return self.question_text

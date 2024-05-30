@@ -3,7 +3,7 @@ import traceback
 from typing import List
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables.utils import AddableDict
-from .parsers import format_text, ClipboardContentParser, CurrentTimeAndDateParser, StateTransitionParser
+from .parsers import ClipboardContentParser, CurrentTimeAndDateParser, StateTransitionParser
 from .tool_loader import ToolLoader
 from .config import Configuration
 from .state import ApplicationState
@@ -45,14 +45,15 @@ class ConversationManager:
         self.beep = beep
 
         # Initialize conversation-specific attributes
-        self.answer_text = ""
-        self.current_state_hash = None
+        self.answer_text: str = ""
+        self.current_state_hash: str = None
 
-        # Initialize user input handler
-        self.user_input = self._create_user_input()
-
-    def _create_user_input(self):
-        return UserInput(config=self.config, state=self.state, transcript_collector=self.collector, beep=self.beep)
+        self.user_input: UserInput = UserInput(
+            config=self.config,
+            state=self.state,
+            transcript_collector=self.collector,
+            beep=self.beep,
+        )
 
     def reload_agent(self, force: bool = False):
         if self.current_state_hash != self.state.get_hash() or force:
@@ -70,40 +71,13 @@ class ConversationManager:
     def add_text_to_history(self, who: str, text: str, force: bool = False):
         if not self.state.are_tools_enabled or force:
             if who == self.config.agent_name:
-                self.agent.memory.save_context({"input": self.user_input.question_text}, {"output": text})
+                self.agent.memory.save_context({"input": self.user_input.get()}, {"output": text})
 
         if self.config.history_file:
             with open(self.config.history_file, "a") as file:
                 datetime = time.strftime("%Y-%m-%d %H:%M:%S")
-                content = format_text(f"{datetime} {who}: {text}")
+                content = self.parser.format_text(f"{datetime} {who}: {text}")
                 file.write(content+"\n")
-
-    def pre_parse_question(self) -> tuple[bool, bool]:
-        if not self.user_input.question_text.strip():
-            return False, False
-
-        state_changed, stop = self.parser.quick_state_change(self.user_input.question_text)
-        if state_changed or stop:
-            return state_changed, stop
-
-        input_was_changed: bool = False
-        if self.config.settings.pre_parsers.clipboard.enabled:
-            changed, out = ClipboardContentParser().parse(self.user_input.question_text)
-            if changed:
-                input_was_changed = True
-                self.user_input.question_text = out
-
-        if self.config.settings.pre_parsers.time.enabled:
-            time_parser = CurrentTimeAndDateParser(timezone=self.config.prompt_replacements["timezone"], state=self.state)
-            changed, out = time_parser.parse(self.user_input.question_text)
-            if changed:
-                input_was_changed = True
-                self.user_input.question_text = out
-
-        if input_was_changed:
-            self.add_text_to_history("Question pre-parser", self.user_input.question_text)
-
-        return False, False
 
     async def main_loop(self, first_question: list[str] = None):
         while not self.state.is_stopped:
@@ -113,47 +87,39 @@ class ConversationManager:
                 break
 
     async def question_answer(self, first_question: list[str] = None) -> bool:
-        yellow = "\033[93m"
-        red_bold_underline = "\033[91;1;4m"
-        reset = "\033[0m"
-        blue = "\033[94m"
-
-        mode = "simple"
-        if self.state.are_tools_enabled:
-            mode = f"{blue}agent{reset}"
-        formatted_string = (
-            f"{yellow}{self.state.input_model}{reset} → "
-            f"{mode} {red_bold_underline}{self.state.llm_model}{reset} ({self.state.llm_model_options.model}) → "
-            f"{yellow}{self.state.output_model}{reset}"
-        )
-        print_text(state=self.state, text=formatted_string)
+        self._print_status()
 
         if first_question:
             for question in first_question:
-                self.user_input.handle_full_sentence(question)
+                self.user_input.set(question)
             print_text(state=self.state, text=f"{self.config.user_name}: {' '.join(first_question)}")
         else:
-            await self.user_input.get_input()
+            await self.user_input.ask_input()
 
-        self.add_text_to_history(self.config.user_name, self.user_input.question_text)
+        if self.parser.is_empty(self.user_input.get()):
+            return False
+
+        if self.parser.must_exit(self.user_input.get()):
+            return True
+
+        if self.parser.change_state(self.user_input.get()):
+            self.reload_agent(force=True)
+            return False
+
+        was_changed, enriched_text = self.parser.enrich(self.user_input.get())
+        self.user_input.set(enriched_text)
+        who = self.config.user_name if not was_changed else "Pre-parser"
+        self.add_text_to_history(who, self.user_input.get())
 
         if self.agent.model is None:
             self.reload_agent(force=False)
-
-        state_changed, stop = self.pre_parse_question()
-        if state_changed:
-            self.reload_agent(force=state_changed)
-            return False
-        if stop:
-            return True
 
         tries = 0
         while tries < self.config.retry_settings["max_tries"]:
             try:
                 stream = not self.state.is_quiet and not self.state.are_tools_enabled
-                text = self.user_input.question_text
-                if text.strip() == "":
-                    break
+                text = self.user_input.get()
+
                 if not self.state.are_tools_enabled:
                     text = str(self.agent.memory.chat_memory) + "\n" + text
                 text = text.lstrip()
@@ -165,7 +131,7 @@ class ConversationManager:
                     break
                 self.response.respond(self.answer_text)
                 self.response.wait_for_audio_process()
-                self.user_input.question_text = ""
+                self.user_input.set("")
                 break
             except KeyboardInterrupt:
                 if not self.state.is_quiet:
@@ -196,6 +162,22 @@ class ConversationManager:
             print(txt if is_quiet else f"{agent_name}: {txt}")
 
         return " ".join(response)
+
+    def _print_status(self):
+        yellow = "\033[93m"
+        red_bold_underline = "\033[91;1;4m"
+        reset = "\033[0m"
+        blue = "\033[94m"
+
+        mode = "simple"
+        if self.state.are_tools_enabled:
+            mode = f"{blue}agent{reset}"
+        formatted_string = (
+            f"{yellow}{self.state.input_model}{reset} → "
+            f"{mode} {red_bold_underline}{self.state.llm_model}{reset} ({self.state.llm_model_options.model}) → "
+            f"{yellow}{self.state.output_model}{reset}"
+        )
+        print_text(state=self.state, text=formatted_string)
 
 
 def response_to_str(response, is_quiet: bool) -> str:
