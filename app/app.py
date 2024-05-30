@@ -81,11 +81,11 @@ class App:
         print("Available pre-parser commands:")
         print("  Switch between agent and normal mode.")
         print("  With agent:")
-        for phrase in self.config["with_tools_phrases"]:
+        for phrase in self.config.phrases["with_tools"]:
             print(f"    - {phrase}")
         print("")
         print("  No agent:")
-        for phrase in self.config["no_tools_phrases"]:
+        for phrase in self.config.phrases["no_tools"]:
             print(f"    - {phrase}")
         print("  ")
         print("  Quit:")
@@ -96,24 +96,30 @@ class App:
         print("  Available models:")
 
         settings: Settings = self.config.settings
+        providers_with_api_keys = {
+            "google": "google",
+            "mistral": "mistral",
+            "groq": "groq",
+            "openai": "openai",
+            "openai_custom": ("openai_custom", "openai_custom"),
+            "lm_studio": "openai_custom",
+            "ollama": None
+        }
+
         for model_name, model_config in settings.models.items():
-            if model_config.model is None or model_config.model == "":
+            if not model_config.model:
                 continue
-            if model_config.provider == "google" and self.config.api_keys["google"] is None:
+            provider_key = providers_with_api_keys.get(model_config.provider)
+            if provider_key is None:
                 continue
-            if model_config.provider == "mistral" and self.config.api_keys["mistral"] is None:
-                continue
-            if model_config.provider == "groq" and self.config.api_keys["groq"] is None:
-                continue
-            if model_config.provider == "openai" and self.config.api_keys["openai"] is None:
-                continue
-            if model_config.provider == "openai_custom" and (self.config.api_keys["custom_provider"] is None or self.config.urls["openai_custom"] is None):
-                continue
-            if model_config.provider == "lm_studio" and self.config.urls["openai_custom"] is None:
-                continue
-            if model_config.provider == "ollama":
+            if isinstance(provider_key, tuple):
+                api_key, url_key = provider_key
+                if self.config.api_keys.get(api_key) is None or self.config.urls.get(url_key) is None:
+                    continue
+            elif self.config.api_keys.get(provider_key) is None:
                 continue
             print(f"    - {model_name} ({model_config.provider} / {model_config.model})")
+
         print("")
         print("  Available Input methods:")
         for model_name, model_config in settings.io_input.items():
@@ -126,7 +132,21 @@ class App:
             if model_config.provider == "deepgram_settings" and self.config.api_keys["deepgram"] is None:
                 continue
             print(f"    - {model_name} ({model_config.provider} / {model_config.model}")
+
         print("")
+        print("  Available pre-parser enrichers:")
+        for enricher in self.pre_parser.enrichers:
+            print(f"   - {enricher.name()}: {enricher.description()}")
+            print(f"        phrases: {', '.join(enricher.phrases())}")
+
+        print("")
+        print("  Available agent tools:")
+        tool_loader = ToolLoader(config=self.config, state=self.state)
+        for name in tool_loader.available_tool_names():
+            print(f"   - {name}")
+
+        print("")
+
         print("  Examples:")
         print("  - python run.py --once --quit What is the capital of France")
         print("  - python run.py --once --quit llm speak What is the capital of France")

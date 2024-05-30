@@ -11,11 +11,8 @@ class StateTransitionParser:
         self.config = config
 
         self.enrichers: List[PreParserInterface] = []
-        self.add_enricher(self.config.settings.pre_parsers.clipboard.enabled, ClipboardContentParser(state=self.state))
-        self.add_enricher(
-            self.config.settings.pre_parsers.time.enabled,
-            CurrentTimeAndDateParser(state=self.state, timezone=self.config.prompt_replacements["timezone"])
-        )
+        self.add_enricher(self.config.settings.pre_parsers.clipboard.enabled, ClipboardContentParser())
+        self.add_enricher(self.config.settings.pre_parsers.time.enabled, CurrentTimeAndDateParser(timezone=self.config.prompt_replacements["timezone"]))
 
     def add_enricher(self, enabled: bool, parser: PreParserInterface):
         if enabled:
@@ -26,6 +23,9 @@ class StateTransitionParser:
         was_changed = False
 
         for enricher in self.enrichers:
+            if not check_text_for_phrases(state=self.state, contains=True, phrases=enricher.phrases(), question=text):
+                return False, text
+
             changed, out = enricher.parse(improved_text)
             if changed:
                 was_changed = True

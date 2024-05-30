@@ -11,6 +11,17 @@ class PreParserInterface:
     def parse(self, question: str) -> Tuple[bool, str]:
         pass
 
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
+    @abstractmethod
+    def description(self) -> str:
+        pass
+
+    @abstractmethod
+    def phrases(self) -> List[str]:
+        pass
 
 def check_text_for_phrases(state: ApplicationState, question: str, phrases: List[str], contains: bool = False) -> bool:
     response_lower: str = question.lower()
@@ -27,15 +38,19 @@ def check_text_for_phrases(state: ApplicationState, question: str, phrases: List
 
 
 class CurrentTimeAndDateParser(PreParserInterface):
-    def __init__(self, state: ApplicationState, timezone: str):
+    def __init__(self, timezone: str):
         self.timezone = timezone
-        self.state = state
+
+    def name(self) -> str:
+        return "time"
+
+    def description(self) -> str:
+        return "Adds time context to question."
+
+    def phrases(self) -> List[str]:
+        return ["time", "date", "now", "today", "tomorrow", "yesterday", "week", "month", "year", "current"]
 
     def parse(self, question: str) -> Tuple[bool, str]:
-        phrases: list[str] = ["time", "date", "now", "today", "tomorrow", "yesterday", "week", "month", "year", "current"]
-        if not check_text_for_phrases(state=self.state, contains=True, phrases=phrases, question=question):
-            return False, question
-
         current_time: str = time.strftime("%H:%M:%S")
         current_date: str = time.strftime("%Y-%m-%d")
 
@@ -43,13 +58,15 @@ class CurrentTimeAndDateParser(PreParserInterface):
 
 
 class ClipboardContentParser(PreParserInterface):
-    def __init__(self, state: ApplicationState):
-        self.state = state
+    def name(self) -> str:
+        return "clipboard"
+
+    def description(self) -> str:
+        return "Adds current active clipboard to question context."
+
+    def phrases(self) -> List[str]:
+        return ["clipboard", "paste"]
 
     def parse(self, question: str) -> Tuple[bool, str]:
-        phrases: list[str] = ["clipboard", "paste"]
-        if not check_text_for_phrases(state=self.state, contains=True, phrases=phrases, question=question):
-            return False, question
-
         clipboard_content = pyperclip.paste().rstrip('\n')
         return (False, question) if clipboard_content == "" else (True, question + f"\n<clipboard>\n{clipboard_content}\n</clipboard>")
