@@ -1,9 +1,6 @@
 import time
 import traceback
-from typing import List
-from langchain_core.messages import BaseMessage
-from langchain_core.runnables.utils import AddableDict
-from .parsers import ClipboardContentParser, CurrentTimeAndDateParser, StateTransitionParser
+from .parsers import StateTransitionParser
 from .tool_loader import ToolLoader
 from .config import Configuration
 from .state import ApplicationState
@@ -14,6 +11,7 @@ from .pkg.beep import BeepGenerator
 from .llm_provider import LanguageModelProvider
 from .io_input import UserInput
 from .my_print import print_text
+from .history import History
 
 
 class ConversationManager:
@@ -54,6 +52,13 @@ class ConversationManager:
             transcript_collector=self.collector,
             beep=self.beep,
         )
+        self.history = History(
+            config=self.config,
+            state=self.state,
+            agent=self.agent,
+            user_input=self.user_input,
+            parser=self.parser,
+        )
 
     def reload_agent(self, force: bool = False):
         if self.current_state_hash != self.state.get_hash() or force:
@@ -67,17 +72,6 @@ class ConversationManager:
             self.agent.memory.clear()
         self.agent.load_memory(force=True)
         self.agent.initialize_prompt()
-
-    def add_text_to_history(self, who: str, text: str, force: bool = False):
-        if not self.state.are_tools_enabled or force:
-            if who == self.config.agent_name:
-                self.agent.memory.save_context({"input": self.user_input.get()}, {"output": text})
-
-        if self.config.history_file:
-            with open(self.config.history_file, "a") as file:
-                datetime = time.strftime("%Y-%m-%d %H:%M:%S")
-                content = self.parser.format_text(f"{datetime} {who}: {text}")
-                file.write(content+"\n")
 
     async def main_loop(self, first_question: list[str] = None):
         while not self.state.is_stopped:
@@ -109,7 +103,7 @@ class ConversationManager:
         was_changed, enriched_text = self.parser.enrich(self.user_input.get())
         self.user_input.set(enriched_text)
         who = self.config.user_name if not was_changed else "Pre-parser"
-        self.add_text_to_history(who, self.user_input.get())
+        self.history.save(who, self.user_input.get())
 
         if self.agent.model is None:
             self.reload_agent(force=False)
@@ -117,21 +111,7 @@ class ConversationManager:
         tries = 0
         while tries < self.config.retry_settings["max_tries"]:
             try:
-                stream = not self.state.is_quiet and not self.state.are_tools_enabled
-                text = self.user_input.get()
-
-                if not self.state.are_tools_enabled:
-                    text = str(self.agent.memory.chat_memory) + "\n" + text
-                text = text.lstrip()
-
-                response = self.agent.ask_question(text=text, stream=stream)
-                self.answer_text = self.write_response(agent_name=self.config.agent_name, stream=stream, agent_response=response, is_quiet=self.state.is_quiet)
-                self.add_text_to_history(self.config.agent_name, self.answer_text)
-                if self.state.is_stopped:
-                    break
-                self.response.respond(self.answer_text)
-                self.response.wait_for_audio_process()
-                self.user_input.set("")
+                self._process()
                 break
             except KeyboardInterrupt:
                 if not self.state.is_quiet:
@@ -145,23 +125,23 @@ class ConversationManager:
                 tries += 1
                 time.sleep(sleep_sec)
 
-    @staticmethod
-    def write_response(is_quiet: bool, agent_name: str, stream: bool, agent_response) -> str:
-        response: List[str] = []
-        if stream:
-            if not is_quiet:
-                print(f"{agent_name}: ", end="")
-            for chunk in agent_response:
-                txt = response_to_str(response=chunk, is_quiet=is_quiet)
-                print(txt, end="", flush=True)
-                response.append(txt.strip())
-            print("")
-        else:
-            txt = response_to_str(response=agent_response, is_quiet=is_quiet)
-            response.append(txt)
-            print(txt if is_quiet else f"{agent_name}: {txt}")
+    def _process(self):
+        stream = not self.state.is_quiet and not self.state.are_tools_enabled
+        text = self.user_input.get()
 
-        return " ".join(response)
+        if not self.state.are_tools_enabled:
+            text = str(self.agent.memory.chat_memory) + "\n" + text
+        text = text.lstrip()
+
+        response = self.agent.ask_question(text=text, stream=stream)
+        self.answer_text = self.response.write_response(stream=stream, agent_response=response)
+        self.history.save(self.config.agent_name, self.answer_text)
+        if self.state.is_stopped:
+            return
+
+        self.response.respond(self.answer_text)
+        self.response.wait_for_audio_process()
+        self.user_input.set("")
 
     def _print_status(self):
         yellow = "\033[93m"
@@ -178,15 +158,3 @@ class ConversationManager:
             f"{yellow}{self.state.output_model}{reset}"
         )
         print_text(state=self.state, text=formatted_string)
-
-
-def response_to_str(response, is_quiet: bool) -> str:
-    if isinstance(response, BaseMessage):
-        return response.content
-    if isinstance(response, AddableDict):
-        if "output" not in response:
-            if "steps" in response and not is_quiet:
-                return "\nThinking..."
-            else:
-                return ""
-    return response["output"] if "output" in response else str(response)

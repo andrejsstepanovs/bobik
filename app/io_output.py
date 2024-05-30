@@ -2,12 +2,15 @@ import shutil
 import subprocess
 import requests
 import threading
+from typing import List
 from pynput import keyboard
 import urllib.parse
 from .config import Configuration
 from .state import ApplicationState
 from .parsers import print_text
 from .alt import AltKeyDoublePressDetector
+from langchain_core.messages import BaseMessage
+from langchain_core.runnables.utils import AddableDict
 
 
 class TextToSpeech:
@@ -21,6 +24,35 @@ class TextToSpeech:
     def is_installed(lib_name: str) -> bool:
         lib: str = shutil.which(lib_name)
         return lib is not None
+
+    def write_response(self, stream: bool, agent_response) -> str:
+        response: List[str] = []
+
+        if stream:
+            if not self.state.is_quiet:
+                print(f"{self.config.agent_name}: ", end="")
+            for chunk in agent_response:
+                txt = self._response_to_str(response=chunk, is_quiet=self.state.is_quiet)
+                print(txt, end="", flush=True)
+                response.append(txt.strip())
+            print("")
+        else:
+            txt = self._response_to_str(response=agent_response, is_quiet=self.state.is_quiet)
+            response.append(txt)
+            print(txt if self.state.is_quiet else f"{self.config.agent_name}: {txt}")
+
+        return " ".join(response)
+
+    def _response_to_str(self, response, is_quiet: bool) -> str:
+        if isinstance(response, BaseMessage):
+            return response.content
+        if isinstance(response, AddableDict):
+            if "output" not in response:
+                if "steps" in response and not is_quiet:
+                    return "\nThinking..."
+                else:
+                    return ""
+        return response["output"] if "output" in response else str(response)
 
     def respond(self, text: str):
         if self.state.output_model != "text":

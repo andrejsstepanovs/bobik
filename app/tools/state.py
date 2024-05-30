@@ -9,6 +9,7 @@ from langchain.memory import ConversationBufferMemory
 class EndConversation(BaseTool):
     name: str = "end_conversation"
     description: str = "Use tool when phrases like 'Please exit.', 'Stop conversation.', etc., are used."
+    state: ApplicationState
 
     def _run(self, model: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         self.state.is_stopped = True
