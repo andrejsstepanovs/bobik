@@ -17,7 +17,7 @@ class ApplicationState:
         self.temperature: float = None
         self.prompts: List[str] = []
 
-        self.llm_agent_type: str = None
+        self.llm_agent_type: AgentType = None
         self.llm_model_options: ModelConfig = None
         self.input_model_options: IOInputConfig = None
         self.output_model_options: IOOutputConfig = None

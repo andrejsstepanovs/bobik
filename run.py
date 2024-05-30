@@ -9,20 +9,15 @@ from app.app import App
 
 def main() -> None:
     app: App = App()
-    app.load_config_and_state()
-    app.load_options()
-    app.load_state_change_parser()
-
     loop, quiet, first_question = app.process_arguments(sys.argv[1:])
-    stdin_input: str = app.stdin_input()
-
     if quiet:
         app.state.is_quiet = quiet
 
-    app.load_manager()
-    app.manager.reload_agent()
-
-    app.start(loop=loop, question=first_question + stdin_input)
+    question: str = first_question + app.stdin_input()
+    if loop:
+        app.conversation(question=question)
+    else:
+        app.one_shot(question=question)
 
 
 if __name__ == "__main__":

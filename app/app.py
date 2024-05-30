@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from typing import List
 from .manager import ConversationManager
 from .io_output import TextToSpeech
+from .my_print import print_text
 from .config import Configuration, Settings
 from .llm_provider import LanguageModelProvider
 from .state import ApplicationState
@@ -19,42 +20,35 @@ load_dotenv()
 
 
 class App:
-    def __init__(self, config_file: str = ""):
-        self.config_file: str = config_file
+    def __init__(self, config_file: str = None):
         self.manager: ConversationManager = None
-        self.settings: Settings = None
-        self.state_change_parser: StateTransitionParser = None
         self.llm_provider: LanguageModelProvider = None
         self.llm_agent: LargeLanguageModelAgent = None
         self.tool_provider: ToolLoader = None
-        self.config: Configuration = None
-        self.state: ApplicationState = None
 
-    def load_config_and_state(self):
-        self.settings = self.load_options()
-        self.config = Configuration(settings=self.settings)
-        self.state = ApplicationState(config=self.config)
+        self.settings: Settings = self.load_settings(config_file)
+        self.config: Configuration = Configuration(settings=self.settings)
+        self.state: ApplicationState = ApplicationState(config=self.config)
+        self.state_change_parser: StateTransitionParser = StateTransitionParser(config=self.config, state=self.state)
 
-    def load_options(self) -> Settings:
-        config_path: str = os.getenv("COMPUTER_CONFIG_FILE")
-        if not config_path:
-            raise Exception("COMPUTER_CONFIG_FILE environment variable not set. Check `my_config.yaml.example` file.")
-        return self.load_settings(config_path)
+    def load_settings(self, config_file: str = None) -> Settings:
+        env_name = "BOBIK_CONFIG_FILE"
+        if config_file is None:
+            config_file: str = os.getenv(env_name)
 
-    def load_settings(self, file_path: str) -> Settings:
-        with open(file_path, "r") as stream:
+        if not config_file:
+            raise Exception(f"{env_name} environment variable not set. Check `examples/`.")
+
+        with open(config_file, "r") as stream:
             try:
                 raw_config: dict = yaml.safe_load(stream)
                 return Settings(**raw_config)
             except yaml.YAMLError as exc:
-                print(f"Failed to load {file_path}. Not valid yaml file. {exc}")
+                print(f"Failed to load {config_file}. Not valid yaml file. {exc}")
                 exit(1)
             except Exception as e:
-                print(f"Failed to load {file_path}. Not valid. {e}")
+                print(f"Failed to load {config_file}. Not valid. {e}")
                 exit(1)
-
-    def load_state_change_parser(self):
-        self.state_change_parser = StateTransitionParser(config=self.config, state=self.state)
 
     def load_agent(self):
         self.manager.reload_agent()
@@ -181,24 +175,35 @@ class App:
 
         return loop, quiet, first_question
 
-    def start(self, loop: bool = False, question: str = ""):
-        if question == "":
-            first_questions: List[str] = []
-        else:
+    def conversation(self, loop: bool = False, question: str = ""):
+        """Start the main loop and print or speak multiple conversation answers."""
+        first_questions: List[str] = []
+        if question != "":
             first_questions = [question]
         try:
-            if loop:
-                asyncio.run(self.manager.main_loop(first_questions))
-            else:
-                asyncio.run(self.manager.question_answer(first_questions))
-
+            if self.manager is None:
+                self.load_manager()
+            asyncio.run(self.manager.main_loop(first_questions))
         except KeyboardInterrupt:
-            if not self.state.is_quiet:
-                print("Exiting...")
-            quit(0)
+            print_text(state=self.state, text="Exiting...")
 
-    async def question(self, questions: List[str]) -> str:
+    def one_shot(self, question: str = ""):
+        """Print or speak answer."""
+        first_questions: List[str] = []
+        if question != "":
+            first_questions = [question]
         try:
+            if self.manager is None:
+                self.load_manager()
+            asyncio.run(self.manager.question_answer(first_questions))
+        except KeyboardInterrupt:
+            print_text(state=self.state, text="Exiting...")
+
+    async def answer(self, questions: List[str]) -> str:
+        """Ask a question and return the answer."""
+        try:
+            if self.manager is None:
+                self.load_manager()
             self.manager.answer_text = ""
             await self.manager.question_answer(questions)
             return self.manager.answer_text
@@ -207,7 +212,8 @@ class App:
                 print("Exiting...")
             quit(0)
 
-    def stdin_input(self) -> str:
+    @staticmethod
+    def stdin_input() -> str:
         piped_input: List[str] = []
         stdin_input: str = ""
 

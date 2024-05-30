@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 from langchain_core.exceptions import OutputParserException
 from langchain.memory import ConversationBufferMemory
 from langchain.agents import initialize_agent, AgentExecutor
@@ -72,7 +72,8 @@ class LargeLanguageModelAgent:
 
     def ask_question(self, text: str, stream: bool = False) -> str:
         if self.state.are_tools_enabled:
-            return self.agent.stream(input={"input": text}) if stream else self.agent.invoke(input={"input": text})
+            question: Dict[str, str] = {"input": text}
+            return self.agent.stream(input=question) if stream else self.agent.invoke(input=question)
         return self.chain.stream(text) if stream else self.model.invoke(text)
 
     @staticmethod

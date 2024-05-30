@@ -1,7 +1,7 @@
 ---
-# Point .env COMPUTER_CONFIG_FILE to this file. Like so:
+# Point .env BOBIK_CONFIG_FILE to this file. Like so:
 # -- .env --
-# COMPUTER_CONFIG_FILE=PATH_TO\computer\examples\1_minimal_groq\my_config.yaml
+# BOBIK_CONFIG_FILE=PATH_TO\computer\examples\1_minimal_groq\my_config.yaml
 prompts:
   default: system_prompt.txt
 history:
