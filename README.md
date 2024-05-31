@@ -23,6 +23,16 @@ As a user, you need to set up necessary api keys and config file location in
 
 See examples folder for more info.
 
+### shortcut
+You can create a shortcut function in your shell to run the app more easily.
+
+```bash
+# .zshrc
+function bobik() {
+  /path/to/run.py "$@"
+}
+```
+
 ## License
 
 The AI Assistant is licensed under the MIT License.
