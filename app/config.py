@@ -47,7 +47,7 @@ class Configuration:
             "sleep_seconds_between_tries": settings.agent.sleep_seconds_between_tries,
         }
 
-        self.available_prompts: Dict[str, str] = {name: self.get_prompt_file(file) for name, file in settings.prompts.items()}
+        self.available_prompts: Dict[str, str] = {name: self._get_prompt_file(file) for name, file in settings.prompts.items()}
 
         self.prompt_replacements: Dict[str, Union[str, datetime.timezone]] = {
             "agent_name": self.agent_name,
@@ -59,14 +59,19 @@ class Configuration:
         }
 
         self.phrases: Dict[str, List[str]] = {
+            "separator": [" .."],
             "exit": settings.phrases.exit,
+            "clear_memory": settings.phrases.clear_memory,
+            "run_once": settings.phrases.run_once,
+            "quiet": settings.phrases.quiet,
+            "verbose": settings.phrases.verbose,
             "no_tools": settings.phrases.no_tools,
             "with_tools": settings.phrases.with_tools,
         }
 
         self.log_level: int = logging.ERROR
 
-    def get_prompt_file(self, file: str) -> str:
+    def _get_prompt_file(self, file: str) -> str:
         if not os.path.exists(file):
             file = os.path.join(self.directory, "..", "prompts", file)
             if not os.path.exists(file):

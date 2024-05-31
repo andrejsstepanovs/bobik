@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from langchain_core.exceptions import OutputParserException
 from langchain.memory import ConversationBufferMemory
 from langchain.agents import initialize_agent, AgentExecutor
@@ -53,9 +53,9 @@ class LargeLanguageModelAgent:
         else:
             self.function_provider.set_memory(self.memory)
             self.tools = self.function_provider.get_tools()
-            self.reload_agent()
+            self._reload_agent()
 
-    def reload_agent(self) -> None:
+    def _reload_agent(self) -> None:
         self.agent = initialize_agent(
             agent=self.state.llm_agent_type,
             llm=self.model,
@@ -72,10 +72,20 @@ class LargeLanguageModelAgent:
 
     def ask_question(self, text: str, stream: bool = False) -> str:
         if self.state.are_tools_enabled:
-            question: Dict[str, str] = {"input": text}
+            question: Dict[str, Any] = {"input": text}
             return self.agent.stream(input=question) if stream else self.agent.invoke(input=question)
         return self.chain.stream(text) if stream else self.model.invoke(text)
 
     @staticmethod
     def _handle_error(error: Exception) -> str:
-        return "Check last answer and fix it to comply with Action/Action Input syntax!" if isinstance(error, OutputParserException) else str(error)
+        err = str(error)
+        parsing_error = "Could not parse LLM output"
+        if parsing_error in err:
+            err = err.replace(parsing_error, "AI: ")
+            max_chars = 1500
+            if len(err) <= max_chars:
+                return f"Action: Final Answer\nAction Input: \n{err}"
+            else:
+                return f"Action: Final Answer\nAction Input: \n{err[max_chars]}"
+        else:
+            return "Repeat same answer again but with prefix 'AI: ' in very beginning of answer!"

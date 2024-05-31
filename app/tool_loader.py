@@ -33,18 +33,18 @@ class ToolLoader:
             self.tools.append(tool)
 
     def get_tools(self) -> List[BaseTool]:
-        self.add_tools_based_on_config()
+        self._add_tools_based_on_config()
         return self.tools
 
-    def is_tool_enabled(self, name: str) -> bool:
+    def _is_tool_enabled(self, name: str) -> bool:
         return bool(self.config.settings.tools.get(name).enabled) if self.config.settings.tools else False
 
-    def add_tools_based_on_config(self):
+    def _add_tools_based_on_config(self):
         tool_config_methods = {
-            "bing_search": lambda: self.add_tool(self.get_bing_search_tool()),
-            "bing_news": lambda: self.add_tool(self.get_bing_news_tool()),
-            "wttr_weather": lambda: self.add_tool(self.get_wttr_weather_tool()),
-            "ics_calendar": lambda: self.add_tool(self.get_calendar_tool()),
+            "bing_search": lambda: self.add_tool(self._get_bing_search_tool()),
+            "bing_news": lambda: self.add_tool(self._get_bing_news_tool()),
+            "wttr_weather": lambda: self.add_tool(WeatherTool(config=self.config)),
+            "ics_calendar": lambda: self.add_tool(self._get_calendar_tool()),
             "enable_disable_tools": lambda: self.add_tool(state_tools.SetToolUsage(state=self.state)),
             "end_conversation": lambda: self.add_tool(state_tools.EndConversation(state=self.state)),
             "model_switch": lambda: self.add_tool(state_tools.SwitchModel(state=self.state, config=self.config)),
@@ -79,38 +79,31 @@ class ToolLoader:
             "google_search",
         ]
         for tool_name in tools_names:
-            if not self.is_tool_enabled(tool_name):
+            if not self._is_tool_enabled(tool_name):
                 tools_names.remove(tool_name)
         return tools_names
 
-    def get_bing_search_tool(self) -> BaseTool:
+    def _get_bing_search_tool(self) -> BaseTool:
         if self.config.api_keys["bing"] is not None:
-            print_text(state=self.state, text="Using Bing Search Tool")
             bing_api = BingSearchAPIWrapper(
                 bing_subscription_key=self.config.api_keys["bing"],
                 bing_search_url=self.config.urls["bing"]["search"],
             )
             return BingSearchResults(api_wrapper=bing_api)
 
-    def get_bing_news_tool(self) -> BaseTool:
+    def _get_bing_news_tool(self) -> BaseTool:
         if self.config.api_keys["bing"] is not None and self.config.urls["bing"]["news"]:
-            print_text(state=self.state, text="Using Bing News Tool")
             return news_tools.NewsRetrievalTool(
                 bing_search_url=self.config.urls["bing"]["news"],
                 subscription_key=self.config.api_keys["bing"],
             )
 
-    def get_wttr_weather_tool(self) -> BaseTool:
-        print_text(state=self.state, text="Using Wttr Weather Tool")
-        return WeatherTool(config=self.config)
-
-    def get_calendar_tool(self) -> BaseTool:
+    def _get_calendar_tool(self) -> BaseTool:
         calendar_config_file = self.config.settings.tools.ics_calendar.config_file
         if not os.path.exists(calendar_config_file):
             raise FileNotFoundError(f"File {calendar_config_file} not found")
 
         with open(calendar_config_file, "r") as file:
-            print_text(state=self.state, text="Using My Calendar Tool")
             calendar_options = yaml.safe_load(file)
             calendar = Calendar(state=self.state, options=calendar_options)
             return calendar_tools.CalendarEventTool(calendar=calendar)

@@ -31,7 +31,7 @@ class LanguageModelProvider:
             "openai": ChatOpenAI,
             "openai_custom": ChatOpenAI,
             "lm_studio": ChatOpenAI,
-            "ollama": Ollama,
+            "ollama": ChatOpenAI,
         }
 
         model_class = models.get(provider_name)
@@ -58,7 +58,7 @@ class LanguageModelProvider:
                 "max_tokens": 4096,
             },
             "ollama": {
-                "base_url": self.config.urls["ollama"],
+                "base_url": self.config.urls["ollama"] + "/v1/",
                 # "max_tokens": 8192,
             },
         }

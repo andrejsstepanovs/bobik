@@ -26,12 +26,12 @@ class App:
         self.llm_agent: LargeLanguageModelAgent = None
         self.tool_provider: ToolLoader = None
 
-        self.settings: Settings = self.load_settings(config_file)
+        self.settings: Settings = self._load_settings(config_file)
         self.config: Configuration = Configuration(settings=self.settings)
         self.state: ApplicationState = ApplicationState(config=self.config)
         self.pre_parser: StateTransitionParser = StateTransitionParser(config=self.config, state=self.state)
 
-    def load_settings(self, config_file: str = None) -> Settings:
+    def _load_settings(self, config_file: str = None) -> Settings:
         env_name = "BOBIK_CONFIG_FILE"
         if config_file is None:
             config_file: str = os.getenv(env_name)
@@ -76,7 +76,7 @@ class App:
         return self.manager
 
     def print_help(self):
-        print("Usage: run.py [--once or --quit] [--quiet] [pre-parser commands] [question]")
+        print("Usage: run.py [--quit] [pre-parser commands] [question]")
         print("")
         print("Available pre-parser commands:")
         print("  Switch between agent and normal mode.")
@@ -148,12 +148,12 @@ class App:
         print("")
 
         print("  Examples:")
-        print("  - python run.py --once --quit What is the capital of France")
-        print("  - python run.py --once --quit llm speak What is the capital of France")
-        print("  - echo \"what is capital of France?\" | python run.py --once --quiet llm speak")
-        print("  - echo \"What is capital of France? Answer with 1 word.\" | python run.py --once --quiet llm")
-        print("  - echo \"What is capital of France? Answer with 1 word.\" | python run.py --once --quiet llm > France.txt")
-        print("  - cat file.py | python run.py --once --quiet code add comments to the code. Answer only with code. > file.py")
+        print("  - python run.py once quit .. What is the capital of France")
+        print("  - python run.py once quit llm speak What is the capital of France")
+        print("  - echo \"what is capital of France?\" | python run.py once quiet llm speak")
+        print("  - echo \"What is capital of France? Answer with 1 word.\" | python run.py once quiet llm")
+        print("  - echo \"What is capital of France? Answer with 1 word.\" | python run.py once quiet llm > France.txt")
+        print("  - cat file.py | python run.py once quiet code add comments to the code. Answer only with code. > file.py")
         print("  - # example of model switching")
         print("  - python run.py")
         print("  - > Tell me a story.")
@@ -168,54 +168,34 @@ class App:
         print("  - > summarize the story")
         print("  - > quit")
 
-    def process_arguments(self, initial_arg_phrases: list[str]) -> tuple[bool, bool, str]:
-        first_question: str = ""
-        args_len: int = len(initial_arg_phrases)
-        loop: bool = True
-        quiet: bool = False
-
-        i = 0
-        while i < args_len:
-            if initial_arg_phrases[i] in ["--once", "--quit"]:
-                loop = False
-            elif initial_arg_phrases[i] == "--help":
-                self.print_help()
-                quit(0)
-            elif initial_arg_phrases[i] == "--quiet":
-                quiet = True
-                self.state.is_quiet = quiet
+    def _pre_parse_questions(self, questions: list[str]) -> list[str]:
+        cleaned_questions: list[str] = list[str]()
+        for question in questions:
+            commands, question_part = self.pre_parser.split(question)
+            found_phrases, found = self.pre_parser.change_state(commands=commands)
+            if found:
+                print_text(state=self.state, text=f"found_phrases: {', '.join(found_phrases)}")
+                new_question = question
+                for phrase in found_phrases:
+                    new_question = new_question.replace(phrase, "").strip()
+                cleaned_questions.append(new_question.strip())
             else:
-                found = self.pre_parser.change_state(initial_arg_phrases[i].strip())
-                if not found:
-                    break
-            i += 1
+                cleaned_questions.append(question_part)
 
-        if i < args_len:
-            first_question = ' '.join(initial_arg_phrases[i:]).strip()
+        return cleaned_questions
 
-        return loop, quiet, first_question
+    def process_arguments(self, args: list[str]):
+        if "--help" in args:
+            self.print_help()
+            quit(0)
 
-    def conversation(self, loop: bool = False, question: str = ""):
+    def conversation(self, questions: list[str] = None):
         """Start the main loop and print or speak multiple conversation answers."""
-        first_questions: List[str] = []
-        if question != "":
-            first_questions = [question]
+        if self.manager is None:
+            self.load_manager()
+        questions = self._pre_parse_questions(questions=questions)
         try:
-            if self.manager is None:
-                self.load_manager()
-            asyncio.run(self.manager.main_loop(first_questions))
-        except KeyboardInterrupt:
-            print_text(state=self.state, text="Exiting...")
-
-    def one_shot(self, question: str = ""):
-        """Print or speak answer."""
-        first_questions: List[str] = []
-        if question != "":
-            first_questions = [question]
-        try:
-            if self.manager is None:
-                self.load_manager()
-            asyncio.run(self.manager.question_answer(first_questions))
+            asyncio.run(self.manager.main_loop(questions))
         except KeyboardInterrupt:
             print_text(state=self.state, text="Exiting...")
 
@@ -224,8 +204,9 @@ class App:
         try:
             if self.manager is None:
                 self.load_manager()
-            self.manager.answer_text = ""
-            await self.manager.question_answer(questions)
+            for question in questions:
+                self.manager.answer_text = ""
+                await self.manager.question_answer(question=question)
             return self.manager.answer_text
         except KeyboardInterrupt:
             if not self.state.is_quiet:

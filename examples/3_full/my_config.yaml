@@ -32,6 +32,15 @@ phrases:
     - no_tools
     - no-agent
     - no_agent
+  run_once:
+    - once
+  verbose:
+    - verbose
+  quiet:
+    - quiet
+  clear_memory:
+    - new
+    - forget
 pre_parsers:
   # clipboard tool will add your active clipboard text on top of the question. Make sure word `clipboard` is part of question for this to happen.
   # example question: "Summarize my clipboard"
@@ -96,7 +105,7 @@ models:
   code:
     # useful for single runs with no tool (no agent) functionality enabled. This will result in much faster boot and answers.
     # cool example that you can plug into bash script loop:
-    # cat my_code.py > computer.py --once --quiet code light refactor following code > my_code.py
+    # cat my_code.py > computer.py once quiet code light refactor following code > my_code.py
     # "code" <- this model definition (uses mistral with no tools + special code prompt)
     provider: mistral
     #model: open-mixtral-8x22b

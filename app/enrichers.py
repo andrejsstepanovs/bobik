@@ -23,18 +23,19 @@ class PreParserInterface:
     def phrases(self) -> List[str]:
         pass
 
-def check_text_for_phrases(state: ApplicationState, question: str, phrases: List[str], contains: bool = False) -> bool:
+
+def check_text_for_phrases(state: ApplicationState, question: str, phrases: List[str], contains: bool = False) -> tuple[str, bool]:
     response_lower: str = question.lower()
     for phrase in phrases:
         if contains:
             if phrase in response_lower:
                 print_text(state=state, text=f"phrase '{phrase}' detected.")
-                return True
+                return phrase, True
         else:
             if phrase in [response_lower, response_lower + "."]:
                 print_text(state=state, text=f"phrase '{phrase}' detected.")
-                return True
-    return False
+                return phrase, True
+    return "", False
 
 
 class CurrentTimeAndDateParser(PreParserInterface):

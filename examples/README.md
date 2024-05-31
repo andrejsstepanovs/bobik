@@ -11,10 +11,10 @@ It can actually point directly to example folder you want to use.
 Then run app:
 ```
 python computer.py
-python .\computer.py --once
-python .\computer.py --once --quiet
-python .\computer.py --once --quiet tell me 2 software engineering jokes
-echo "Hi" | python .\computer.py --once --quiet
+python .\computer.py once
+python .\computer.py once quiet
+python .\computer.py once quiet tell me 2 software engineering jokes
+echo "Hi" | python .\computer.py once quiet
 ```
 
 
@@ -30,8 +30,8 @@ DEEPGRAM_API_KEY=
 Usage
 ```
 python computer.py vocal
-python .\computer.py --once speak largest city in the world
-python .\computer.py --once listen
+python .\computer.py once speak largest city in the world
+python .\computer.py once listen
 python .\computer.py
  > speak
  > how are you

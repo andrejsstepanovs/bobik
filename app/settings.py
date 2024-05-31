@@ -22,6 +22,10 @@ class Phrases(BaseModel):
     exit: List[str]
     with_tools: List[str]
     no_tools: List[str]
+    run_once: List[str]
+    clear_memory: List[str]
+    quiet: List[str]
+    verbose: List[str]
 
 
 class PreParser(BaseModel):

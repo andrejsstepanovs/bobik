@@ -17,13 +17,13 @@ agent:
   max_iterations: 4
   tools_enabled: true
 phrases:
-  exit:
-    - q
-    - exit
-  with_tools:
-    - agent
-  no_tools:
-    - llm
+  exit: ["q", "exit"]
+  with_tools: ["agent"]
+  no_tools: ["llm"]
+  run_once: ["once"]
+  verbose: ["verbose"]
+  quiet: ["quiet"]
+  clear_memory: ["new", "forget"]
 user:
   location: Germany, Berlin
   name: Master

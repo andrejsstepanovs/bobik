@@ -1,4 +1,5 @@
 import requests
+import json
 from datetime import datetime
 from typing import Optional, Dict, List
 from langchain_core.callbacks import CallbackManagerForToolRun
@@ -15,6 +16,8 @@ class WeatherTool(BaseTool):
         "A wrapper around Weather Search. "
         "Useful for when you need to know current or upcoming weather. "
         "Tool have one optional argument that can have values like 'now', 'today', 'tomorrow' or specific date in format 'YYYY-MM-DD'."
+        "Returns:"
+        "A JSON string representing a weather."
     )
     cache: dict = {}
     config: Configuration = None
@@ -57,7 +60,7 @@ class WeatherTool(BaseTool):
                         time: str = str(description['time']).zfill(4)
                         weather_info.append(f"-- {time[:2]}:{time[2:]}: {description['weatherDesc'][0]['value']}, {description['tempC']}°C, {description['chanceofrain']}% rain, {description['windspeedKmph']} km/h")
 
-            self.cache[filter_date_date] = "\n".join(weather_info)
+            self.cache[filter_date_date] = json.dumps(weather_info)
 
         return self.cache[filter_date_date]
 

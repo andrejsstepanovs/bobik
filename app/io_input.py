@@ -21,7 +21,7 @@ else:
     import readline
 
 
-async def listen_to_input(config: Configuration, state: ApplicationState, transcript_collector: Transcript, callback):
+async def _listen_to_input(config: Configuration, state: ApplicationState, transcript_collector: Transcript, callback):
     if state.input_model_options.provider == "deepgram":
         if config.api_keys["deepgram"] is None:
             raise Exception("Deepgram API key not set")
@@ -95,8 +95,7 @@ class UserInput:
     async def ask_input(self):
         if self.state.input_model_options.provider != "text":
             if self.state.is_hotkey_enabled:
-                keypress_count = 2
-                print_text(state=self.state, text=f"Double-tap {keypress_count} times and start talking")
+                print_text(state=self.state, text=f"Tap Alt key {self.config.keypress_count_start_talking} times and start talking")
                 if self.state.output_model == "deepgram":
                     print_text(state=self.state, text="And same to stop long playback.")
 
@@ -109,7 +108,7 @@ class UserInput:
 
             self.beep.play_beep()
             self.transcript_collector.clear_transcript()
-            await listen_to_input(
+            await _listen_to_input(
                 config=self.config,
                 state=self.state,
                 transcript_collector=self.transcript_collector,

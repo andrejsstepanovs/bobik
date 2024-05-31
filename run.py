@@ -9,15 +9,12 @@ from app.app import App
 
 def main() -> None:
     app: App = App()
-    loop, quiet, first_question = app.process_arguments(sys.argv[1:])
-    if quiet:
-        app.state.is_quiet = quiet
 
-    question: str = first_question + app.stdin_input()
-    if loop:
-        app.conversation(question=question)
-    else:
-        app.one_shot(question=question)
+    input_question = sys.argv[1:]
+    app.process_arguments(input_question)
+
+    question: str = " ".join(input_question) + app.stdin_input()
+    app.conversation(questions=[question])
 
     # example of programmatic use
     # app.tool_provider.add_tool(mytool())

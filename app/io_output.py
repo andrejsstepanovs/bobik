@@ -21,7 +21,7 @@ class TextToSpeech:
         self.state = state
 
     @staticmethod
-    def is_installed(lib_name: str) -> bool:
+    def _is_installed(lib_name: str) -> bool:
         lib: str = shutil.which(lib_name)
         return lib is not None
 
@@ -56,14 +56,15 @@ class TextToSpeech:
 
     def respond(self, text: str):
         if self.state.output_model != "text":
-            self.speak(text)
+            self._speak(text)
+            self._wait_for_audio_process()
 
-    def speak(self, text: str):
+    def _speak(self, text: str):
         if self.state.output_model_options.provider == "deepgram":
             if self.config.api_keys["deepgram"] is None:
                 raise ValueError("Deepgram API key not found.")
 
-            if not self.is_installed("ffplay"):
+            if not self._is_installed("ffplay"):
                 raise ValueError("ffplay not found, necessary to stream audio.")
 
             try:
@@ -89,7 +90,7 @@ class TextToSpeech:
             )
 
             # Start the keyboard listener in a separate thread
-            listener_thread = threading.Thread(target=self.start_listener)
+            listener_thread = threading.Thread(target=self._start_listener)
             listener_thread.daemon = True  # Set as daemon thread, so it exits when main thread finishes
             listener_thread.start()
 
@@ -115,7 +116,7 @@ class TextToSpeech:
                                 self.audio_process.stdin.flush()
                             if not stream_started:
                                 stream_started = True
-                                print_text(self.state, text="Double-tap Alt to stop playback.")
+                                print_text(self.state, text=f"Tap Alt {self.config.keypress_count_stop_listening} times to stop playback.")
                             if self.key_press_handler.threading.is_set():
                                 break
                 if self.audio_process is not None and self.audio_process.stdin:
@@ -131,18 +132,13 @@ class TextToSpeech:
                 print('Exception in response:', e.__class__.__name__)
                 raise e
 
-    def start_listener(self):
+    def _start_listener(self):
         listener = keyboard.Listener(on_press=self.key_press_handler.handle_key_press)
         self.key_press_handler.listener = listener
         listener.start()
         listener.join()
 
-    def terminate_audio_process(self):
-        if self.audio_process:
-            self.audio_process.terminate()
-            print_text(self.state, text="Audio process terminated!")
-
-    def wait_for_audio_process(self):
+    def _wait_for_audio_process(self):
         if self.audio_process:
             self.audio_process.wait()
         if self.key_press_handler:

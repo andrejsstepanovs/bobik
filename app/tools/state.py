@@ -13,7 +13,7 @@ class EndConversation(BaseTool):
 
     def _run(self, model: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         self.state.is_stopped = True
-        return "Exit"
+        return "AI: Exit"
 
 
 class RetrieveModels(BaseTool):
@@ -27,7 +27,7 @@ class RetrieveModels(BaseTool):
     def _run(self, model: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         models = [model_name for model_name, options in self.config.settings.models.items()]
         models.extend(synonym for options in self.config.settings.models.values() for synonym in options.synonyms)
-        return str(models)
+        return "AI: "+str(models)
 
 
 class SwitchModel(BaseTool):
@@ -47,7 +47,7 @@ class SwitchModel(BaseTool):
             if model in [name] + options.synonyms:
                 self.state.set_llm_model(name)
                 return f"Changed to {model}"
-        return f"Not changed. Given model does not exist: '{model}'"
+        return f"AI: Not changed. Given model does not exist: '{model}'"
 
 
 class ResetChat(BaseTool):
@@ -60,7 +60,7 @@ class ResetChat(BaseTool):
 
     def _run(self, something: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         self.memory.clear()
-        return "Cleared this conversation."
+        return "AI: Cleared this conversation."
 
 
 class SwitchInputMethod(BaseTool):
@@ -75,7 +75,7 @@ class SwitchInputMethod(BaseTool):
     def _run(self, method: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         input_model = "text" if method in ["text", "voice", "speech", "deepgram", "listen"] else method
         self.state.set_input_model(input_model)
-        return f"Input changed to {input_model}"
+        return f"AI: Input changed to {input_model}"
 
 
 class SwitchOutputMethod(BaseTool):
@@ -92,7 +92,7 @@ class SwitchOutputMethod(BaseTool):
     def _run(self, method: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         output_model = "text" if method in ["text", "write"] else "speak"
         self.state.set_output_model(output_model)
-        return f"Output changed to {output_model}"
+        return f"AI: Output changed to {output_model}"
 
 
 class SetToolUsage(BaseTool):
@@ -107,4 +107,4 @@ class SetToolUsage(BaseTool):
 
     def _run(self, use_tools: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         self.state.use_tools = use_tools.lower() == "yes"
-        return "Set to use tools." if self.state.use_tools else "Set to not use tools."
+        return "AI: Set to use tools." if self.state.use_tools else "Set to not use tools."

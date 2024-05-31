@@ -1,6 +1,7 @@
 from typing import Optional, List
 from datetime import datetime
 import dateparser
+import json
 from langchain.tools import BaseTool
 from langchain_core.callbacks import CallbackManagerForToolRun
 from app.pkg.my_calendar import Calendar
@@ -14,6 +15,8 @@ class CalendarEventTool(BaseTool):
         "Use this tool to fetch upcoming calendar events. "
         "Tool has one optional argument that can have values like 'now', 'today', 'tomorrow' "
         "or specific date in format 'YYYY-MM-DD'."
+        "Returns:"
+        "A JSON string representing a weather."
     )
 
     calendar: Calendar = None
@@ -37,9 +40,10 @@ class CalendarEventTool(BaseTool):
             if filter_date and filter_date.strftime("%Y-%m-%d") != event_date:
                 continue
 
-            output.append(f"\nDate: {event_date} {'(Today)' if now.date() == event['start'].date() else ''}")
+            output.append("")
+            output.append(f"Date: {event_date} {'(Today)' if now.date() == event['start'].date() else ''}")
             output.append(f"Event: {event['summary'].replace(',', ' ')}")
             output.append(f"Time: {event['start'].strftime('%H:%M')} - {event['end'].strftime('%H:%M')}")
             output.append(f"Calendar: {event['calendar'] if event['calendar'].lower() != event['name'].lower() else event['name']}")
 
-        return "\n".join(output).replace("`", "'")
+        return json.dumps(output)

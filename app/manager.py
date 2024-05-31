@@ -27,6 +27,8 @@ class ConversationManager:
             response: TextToSpeech,
             beep: BeepGenerator,
     ):
+        self.loop_iterations = 0
+
         # Initialize configuration and state
         self.config = config
         self.state = state
@@ -73,34 +75,46 @@ class ConversationManager:
         self.agent.load_memory(force=True)
         self.agent.initialize_prompt()
 
-    async def main_loop(self, first_question: list[str] = None):
-        while not self.state.is_stopped:
-            stop = await self.question_answer(first_question)
-            first_question = None
-            if stop:
-                break
+    async def main_loop(self, questions: list[str] = None):
+        async def answer(question: str = None):
+            stop = await self.question_answer(question=question)
+            return stop or self.state.is_stopped
 
-    async def question_answer(self, first_question: list[str] = None) -> bool:
+        while True:
+            if questions:
+                for question in questions:
+                    if await answer(question):
+                        return
+                questions = None
+            elif await answer():
+                return
+
+    async def question_answer(self, question: str = None) -> bool:
         self._print_status()
 
-        if first_question:
-            for question in first_question:
-                self.user_input.set(question)
-            print_text(state=self.state, text=f"{self.config.user_name}: {' '.join(first_question)}")
+        if question:
+            self.user_input.set(question)
         else:
             await self.user_input.ask_input()
 
-        if self.parser.is_empty(self.user_input.get()):
-            return False
+        commands, question = self.parser.split(self.user_input.get())
 
-        if self.parser.must_exit(self.user_input.get()):
+        if self.parser.must_exit(question=commands):
             return True
 
-        if self.parser.change_state(self.user_input.get()):
+        if self.parser.must_clear_memory(question=commands):
+            self.clear_memory()
+            return False
+
+        found_phrases, found = self.parser.change_state(commands=commands)
+        if found:
             self.reload_agent(force=True)
             return False
 
-        was_changed, enriched_text = self.parser.enrich(self.user_input.get())
+        if self.parser.is_empty(question):
+            return False
+
+        was_changed, enriched_text = self.parser.enrich(text=question)
         self.user_input.set(enriched_text)
         who = self.config.user_name if not was_changed else "Pre-parser"
         self.history.save(who, self.user_input.get())
@@ -111,7 +125,12 @@ class ConversationManager:
         tries = 0
         while tries < self.config.retry_settings["max_tries"]:
             try:
-                self._process()
+                text = self.user_input.get()
+                if not self.state.are_tools_enabled:
+                    text = str(self.agent.memory.chat_memory) + "\n" + text
+                text = text.lstrip()
+                self._process(question=text)
+                self.user_input.set("")
                 break
             except KeyboardInterrupt:
                 if not self.state.is_quiet:
@@ -125,25 +144,23 @@ class ConversationManager:
                 tries += 1
                 time.sleep(sleep_sec)
 
-    def _process(self):
+    def _process(self, question: str = ""):
         stream = not self.state.is_quiet and not self.state.are_tools_enabled
-        text = self.user_input.get()
 
-        if not self.state.are_tools_enabled:
-            text = str(self.agent.memory.chat_memory) + "\n" + text
-        text = text.lstrip()
-
-        response = self.agent.ask_question(text=text, stream=stream)
+        response = self.agent.ask_question(text=question, stream=stream)
         self.answer_text = self.response.write_response(stream=stream, agent_response=response)
+
         self.history.save(self.config.agent_name, self.answer_text)
         if self.state.is_stopped:
             return
 
         self.response.respond(self.answer_text)
-        self.response.wait_for_audio_process()
-        self.user_input.set("")
 
     def _print_status(self):
+        self.loop_iterations += 1
+        if self.state.is_quiet:
+            return
+
         yellow = "\033[93m"
         red_bold_underline = "\033[91;1;4m"
         reset = "\033[0m"
@@ -153,7 +170,7 @@ class ConversationManager:
         if self.state.are_tools_enabled:
             mode = f"{blue}agent{reset}"
         formatted_string = (
-            f"{yellow}{self.state.input_model}{reset} → "
+            f"{self.loop_iterations}) {yellow}{self.state.input_model}{reset} → "
             f"{mode} {red_bold_underline}{self.state.llm_model}{reset} ({self.state.llm_model_options.model}) → "
             f"{yellow}{self.state.output_model}{reset}"
         )

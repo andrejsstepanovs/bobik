@@ -13,6 +13,10 @@ phrases:
   exit: ["q", "exit"]
   with_tools: ["agent"]
   no_tools: ["llm"]
+  run_once: ["once"]
+  verbose: ["verbose"]
+  quiet: ["quiet"]
+  clear_memory: ["new", "forget"]
 user:
   location: Germany, Berlin
 models:
