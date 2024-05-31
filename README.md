@@ -105,18 +105,18 @@ python app.py --help
 - keeps memory even if switching between different models
 - tools with langchain agent
 - quick stage change using pre-parser (question not sent to LLM) or via tools (LLM uses tool):
--- model switching
--- input switching
--- output switching
--- enable / disable agent mode
--- reset memory
--- enable / disable tools
--- graceful exit
--- forget history
+-- model switching - based on your model configuration
+-- input switching - see configs `text` / `listen` or `verbal` / `text`
+-- output switching - see configs `text` / `speak` or `verbal` / `text`
+-- enable / disable agent mode `llm` / `agent`
+-- enable / disable tools ^^^
+-- reset memory / forget history - `forget`
+-- graceful exit - `quit` `q` (see config)
 - forever conversation loop (default)
-- run only once (--once)
-- --quiet mode if you dont need any other output (useful for scripting tasks)
-- clipboard - includes clipboard in question
+- run only `once`
+- `quiet` mode if you don't need any other output (useful for scripting tasks)
+- `clipboard` - includes clipboard in question
+- `file` - includes file in question
 - Custom tools
 -- Weather (wttr.in)
 -- Calendar (local ics file parser & url)
@@ -126,16 +126,17 @@ python app.py --help
 --- google search
 --- wikipedia
 - piping stdin input as question
-- pasting input from clipboard - Use following template "my question here: <paste>" 
+- pasting input from `clipboard` - Use following template "my question here: <paste>" 
 - llm providers
--- openai
--- groq
--- mistral
--- google - not tested (not possible in my country)
--- ollama
--- lm studio
--- custom openai api
-- question / answer history text file
+-- `openai`
+-- `groq`
+-- `mistral`
+-- `google` - not tested (not possible in my country)
+-- `ollama`
+-- `runpod`
+-- `lm_studio`
+-- `openai_custom`
+- question / answer history text file - disable / enable in config file
 
 As you see a lot of functionality is baked into this app. This allows many unortodox and imaginative ways of using it. It can be chat, it can be one shot action, it can be plugged into bash scripts.
 
