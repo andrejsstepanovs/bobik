@@ -132,6 +132,12 @@ models:
     base_url: http://localhost:1234
     synonyms: ["local"]
 
+  # OTHER PRIVATE PROVIDERS
+  runpod: # Set runpod api key env var, then Start Serverless vLLM
+    provider: runpod
+    model: openchat/openchat-3.5-1210
+    endpoint_id: vllm-xxxxxxxxxxxxxx
+
 io_input:
   text:
     provider: text

@@ -27,6 +27,7 @@ class Configuration:
             "openai": os.getenv("OPENAI_API_KEY"),
             "mistral": os.getenv("MISTRAL_API_KEY"),
             "openai_custom": os.getenv("CUSTOM_PROVIDER_API_KEY"),
+            "runpod": os.getenv("RUNPOD_PROVIDER_API_KEY"),
             "serpapi": os.getenv("SERPAPI_API_KEY"),
             "bing": os.getenv("BING_SUBSCRIPTION_KEY"),
         }
@@ -36,6 +37,7 @@ class Configuration:
             "deepgram": "https://api.deepgram.com/v1/",
             "lm_studio": os.getenv("LMSTUDIO_PROVIDER_BASE_URL"),
             "openai_custom": os.getenv("CUSTOM_PROVIDER_BASE_URL"),
+            "runpod": "https://api.runpod.ai/v2/{endpoint_id}/openai/v1",
             "bing": {
                 "search": os.getenv("BING_SEARCH_URL"),
                 "news": os.getenv("BING_NEWS_URL"),

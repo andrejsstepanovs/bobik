@@ -46,6 +46,7 @@ class User(BaseModel):
 class ModelConfig(BaseModel):
     provider: str
     model: str
+    endpoint_id: str = None
     agent_type: str = None
     temperature: float = None
     synonyms: List[str] = []

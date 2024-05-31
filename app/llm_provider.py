@@ -7,6 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_google_genai import GoogleGenerativeAI
 from langchain_community.llms import Ollama
 from langchain_mistralai.chat_models import ChatMistralAI
+from langchain_community.llms import VLLMOpenAI
 
 
 class LanguageModelProvider:
@@ -30,6 +31,7 @@ class LanguageModelProvider:
             "groq": ChatGroq,
             "openai": ChatOpenAI,
             "openai_custom": ChatOpenAI,
+            "runpod": VLLMOpenAI,
             "lm_studio": ChatOpenAI,
             "ollama": ChatOpenAI,
         }
@@ -61,6 +63,10 @@ class LanguageModelProvider:
                 "base_url": self.config.urls["ollama"] + "/v1/",
                 # "max_tokens": 8192,
             },
+            "runpod": {
+                "openai_api_key": self.config.api_keys["runpod"],
+                "openai_api_base": self.config.urls["runpod"].replace("{endpoint_id}", self.state.llm_model_options.endpoint_id),
+            }
         }
 
         try:
