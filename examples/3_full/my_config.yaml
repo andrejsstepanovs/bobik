@@ -48,6 +48,8 @@ pre_parsers:
   # each time time, and other time related words will be used, time will be added. This can be not what you want for some, specific cases. For example, see `code` model that is defined in this example. 
   # There using this pre-parser will not be ideal, as we would send to LLM something not related to code.
   time: { enabled: true }
+  # each time file or code is mentioned together with path to file. If file is found, it will be added to question as extra context.
+  file: { enabled: true }
 tools:
   # enable them one by one while checking that everything works. Agent is able to use multiple tools before getting to final answer.
   wttr_weather: { enabled: true }

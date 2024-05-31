@@ -1,4 +1,4 @@
-from app.enrichers import check_text_for_phrases, CurrentTimeAndDateParser, ClipboardContentParser, PreParserInterface
+from app.enrichers import check_text_for_phrases, CurrentTime, Clipboard, LocalFile, PreParserInterface
 from typing import List, Tuple
 from .state import ApplicationState
 from .config import Configuration
@@ -11,8 +11,9 @@ class StateTransitionParser:
         self.config: Configuration = config
 
         self.enrichers: List[PreParserInterface] = []
-        self.add_enricher(self.config.settings.pre_parsers.clipboard.enabled, ClipboardContentParser())
-        self.add_enricher(self.config.settings.pre_parsers.time.enabled, CurrentTimeAndDateParser(timezone=self.config.prompt_replacements["timezone"]))
+        self.add_enricher(self.config.settings.pre_parsers.clipboard.enabled, Clipboard())
+        self.add_enricher(self.config.settings.pre_parsers.time.enabled, CurrentTime(timezone=self.config.prompt_replacements["timezone"]))
+        self.add_enricher(self.config.settings.pre_parsers.file.enabled, LocalFile())
 
     def add_enricher(self, enabled: bool, parser: PreParserInterface):
         if enabled:
@@ -25,7 +26,7 @@ class StateTransitionParser:
         for enricher in self.enrichers:
             found_phrase, found = check_text_for_phrases(state=self.state, contains=True, phrases=enricher.phrases(), question=text)
             if not found:
-                break
+                continue
 
             changed, out = enricher.parse(improved_text)
             if changed:

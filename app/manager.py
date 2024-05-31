@@ -125,9 +125,9 @@ class ConversationManager:
         tries = 0
         while tries < self.config.retry_settings["max_tries"]:
             try:
-                text = self.user_input.get()
+                text = f"{self.config.user_name}: {self.user_input.get()}"
                 if not self.state.are_tools_enabled:
-                    text = str(self.agent.memory.chat_memory) + "\n" + text
+                    text = str(self.agent.memory.chat_memory) + "\n\n" + text
                 text = text.lstrip()
                 self._process(question=text)
                 self.user_input.set("")

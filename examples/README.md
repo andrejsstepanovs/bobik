@@ -15,6 +15,7 @@ python .\computer.py once
 python .\computer.py once quiet
 python .\computer.py once quiet tell me 2 software engineering jokes
 echo "Hi" | python .\computer.py once quiet
+python .\computer.py llm once code refactor this file /home/path/to/file.py answer only with python
 ```
 
 

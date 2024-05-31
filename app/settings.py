@@ -78,6 +78,7 @@ class IOOutputConfig(BaseModel):
 class PreParsers(BaseModel):
     clipboard: PreParser
     time: PreParser
+    file: PreParser
 
 
 class Tools(BaseModel):

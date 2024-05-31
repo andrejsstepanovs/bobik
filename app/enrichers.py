@@ -4,6 +4,8 @@ from app.state import ApplicationState
 from app.my_print import print_text
 import pyperclip
 import time
+import os
+import re
 
 
 class PreParserInterface:
@@ -38,7 +40,7 @@ def check_text_for_phrases(state: ApplicationState, question: str, phrases: List
     return "", False
 
 
-class CurrentTimeAndDateParser(PreParserInterface):
+class CurrentTime(PreParserInterface):
     def __init__(self, timezone: str):
         self.timezone = timezone
 
@@ -58,7 +60,7 @@ class CurrentTimeAndDateParser(PreParserInterface):
         return True, question + f"\n- Today:\n-- Date: {current_date}\n-- Time: {current_time}\n-- Timezone: {self.timezone}"
 
 
-class ClipboardContentParser(PreParserInterface):
+class Clipboard(PreParserInterface):
     def name(self) -> str:
         return "clipboard"
 
@@ -71,3 +73,31 @@ class ClipboardContentParser(PreParserInterface):
     def parse(self, question: str) -> Tuple[bool, str]:
         clipboard_content = pyperclip.paste().rstrip('\n')
         return (False, question) if clipboard_content == "" else (True, question + f"\n<clipboard>\n{clipboard_content}\n</clipboard>")
+
+
+class LocalFile(PreParserInterface):
+    def name(self) -> str:
+        return "file"
+
+    def description(self) -> str:
+        return "Adds local file content to question context."
+
+    def phrases(self) -> List[str]:
+        return ["file", "code"]
+
+    def parse(self, question: str) -> Tuple[bool, str]:
+        sep = os.path.sep
+        if sep not in question:
+            return False, question
+
+        found = False
+        paths = re.findall(f'(?:[A-Za-z]:)?{os.path.sep}(?:[^{os.path.sep}\\s]+{os.path.sep})*[^{os.path.sep}\\s]*', question)
+        existing_paths = [path for path in paths if os.path.exists(path)]
+        for path in existing_paths:
+            with open(path, 'r') as file:
+                found = True
+                content = file.read()
+                filename = os.path.basename(path)
+                question = question.replace(path, f"\n# File: {filename}\n```\n{content}\n```\n")
+
+        return found, question

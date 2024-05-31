@@ -65,7 +65,7 @@ class LanguageModelProvider:
             },
             "runpod": {
                 "openai_api_key": self.config.api_keys["runpod"],
-                "openai_api_base": self.config.urls["runpod"].replace("{endpoint_id}", self.state.llm_model_options.endpoint_id),
+                "openai_api_base": self.config.urls["runpod"].replace("{endpoint_id}", self.state.llm_model_options.endpoint_id if self.state.llm_model_options.endpoint_id else "unknown"),
             }
         }
 
