@@ -137,6 +137,7 @@ python app.py --help
 -- `lm_studio`
 -- `openai_custom`
 - question / answer history text file - disable / enable in config file
+- tasks - place where you can define frequently used prompt questions and use them in conversations.
 
 As you see a lot of functionality is baked into this app. This allows many unortodox and imaginative ways of using it. It can be chat, it can be one shot action, it can be plugged into bash scripts.
 

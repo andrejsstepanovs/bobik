@@ -112,3 +112,4 @@ class Settings(BaseModel):
     history: History = None
     pre_parsers: PreParsers = None
     tools: Tools = None
+    tasks: Dict[str, List[str]] = None

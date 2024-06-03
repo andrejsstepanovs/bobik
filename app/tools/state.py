@@ -9,7 +9,7 @@ from langchain.memory import ConversationBufferMemory
 class EndConversation(BaseTool):
     name: str = "end_conversation"
     description: str = "Use tool when phrases like 'Please exit.', 'Stop conversation.', etc., are used."
-    state: ApplicationState
+    state: ApplicationState = None
 
     def _run(self, model: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         self.state.is_stopped = True
@@ -22,7 +22,7 @@ class RetrieveModels(BaseTool):
         "Returns all available model names that can be used using switch_model() tool. "
         "Tool returns json array with values. "
     )
-    config: Configuration
+    config: Configuration = None
 
     def _run(self, model: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         models = [model_name for model_name, options in self.config.settings.models.items()]
@@ -39,8 +39,8 @@ class SwitchModel(BaseTool):
         "Use this tool when phrases like 'change model to', 'switch model' is used. "
         "Available can be retrieved using get_models() tool. "
     )
-    state: ApplicationState
-    config: Configuration
+    state: ApplicationState = None
+    config: Configuration = None
 
     def _run(self, model: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         for name, options in self.config.settings.models.items():
@@ -56,7 +56,7 @@ class ResetChat(BaseTool):
         "Use this tool when phrases like 'forget this conversation', "
         "'lets change the topic', 'forget about that' or similar is mentioned. "
     )
-    memory: ConversationBufferMemory
+    memory: ConversationBufferMemory = None
 
     def _run(self, something: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         self.memory.clear()
@@ -70,7 +70,7 @@ class SwitchInputMethod(BaseTool):
         "Use this tool for anything to do with input change. "
         "Available values are: 'text', 'voice', 'speech', 'listen'. "
     )
-    state: ApplicationState
+    state: ApplicationState = None
 
     def _run(self, method: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         input_model = "text" if method in ["text", "voice", "speech", "deepgram", "listen"] else method
@@ -87,7 +87,7 @@ class SwitchOutputMethod(BaseTool):
         "Use this tool for anything to do with output change or desired response method. "
         "Available values are: 'text', 'voice', 'speech', 'speak'. "
     )
-    state: ApplicationState
+    state: ApplicationState = None
 
     def _run(self, method: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         output_model = "text" if method in ["text", "write"] else "speak"
@@ -103,7 +103,7 @@ class SetToolUsage(BaseTool):
         "Use tool with value 'No' when phrases like 'Dont use tools', 'No tools', 'No function calling' are used. "
         "Available values are: 'Yes', 'No'. "
     )
-    state: ApplicationState
+    state: ApplicationState = None
 
     def _run(self, use_tools: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         self.state.use_tools = use_tools.lower() == "yes"

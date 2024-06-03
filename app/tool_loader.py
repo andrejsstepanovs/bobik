@@ -33,7 +33,15 @@ class ToolLoader:
             self.tools.append(tool)
 
     def get_tools(self) -> List[BaseTool]:
-        self._add_tools_based_on_config()
+        if self.tools:
+            return self.tools
+
+        self.tools: List[BaseTool] = []
+        try:
+            self._add_tools_based_on_config()
+        except Exception as e:
+            print(f"Tool loading error occurred: {e}")
+            quit(1)
         return self.tools
 
     def _is_tool_enabled(self, name: str) -> bool:
@@ -60,6 +68,13 @@ class ToolLoader:
         for name in self.available_tool_names():
             if name in tool_config_methods:
                 tool_config_methods[name]()
+
+    def call_tool(self, name: str, param: str = None) -> tuple[str, str]:
+        for tool in self.get_tools():
+            if tool.name == name:
+                response = tool.run(tool_input=param, verbose=True)
+                return name, str(response)
+        return "", ""
 
     def available_tool_names(self) -> List[str]:
         tools_names = [

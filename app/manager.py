@@ -75,13 +75,15 @@ class ConversationManager:
         self.agent.load_memory(force=True)
         self.agent.initialize_prompt()
 
-    async def main_loop(self, questions: list[str] = None):
+    async def main_loop(self, questions: list[str] = None, print_questions: bool = False):
         async def answer(question: str = None):
+            if print_questions:
+                print(f"{self.config.user_name}: \033[32;1m {question} \033[0m")
             stop = await self.question_answer(question=question)
             return stop or self.state.is_stopped
 
         while True:
-            if questions:
+            if questions is not None:
                 for question in questions:
                     if await answer(question):
                         return
@@ -96,6 +98,9 @@ class ConversationManager:
             self.user_input.set(question)
         else:
             await self.user_input.ask_input()
+
+        if await self._tasks(question):
+            return False
 
         commands, question = self.parser.split(self.user_input.get())
 
@@ -112,6 +117,12 @@ class ConversationManager:
             return False
 
         if self.parser.is_empty(question):
+            return False
+
+        tool_call_response = self._manual_tool_call(query=question)
+        if tool_call_response != "":
+            self.response.respond(tool_call_response)
+            self.history.save(self.config.agent_name, tool_call_response)
             return False
 
         was_changed, enriched_text = self.parser.enrich(text=question)
@@ -155,6 +166,32 @@ class ConversationManager:
             return
 
         self.response.respond(self.answer_text)
+
+    def _manual_tool_call(self, query: str = None) -> str:
+        parts = query.split(" ")
+        if len(parts) == 0 or len(parts) > 2:
+            return ""
+
+        tool_name, tool_call_response = self.tool_loader.call_tool(name=parts[0], param=parts[1] if len(parts) == 2 else None)
+        if tool_name != "" and tool_call_response != "":
+            print_text(state=self.state, text=f"Manual tool call: {tool_name}")
+            self.response.write_response(stream=False, agent_response=tool_call_response)
+        return tool_call_response
+
+    async def _tasks(self, task_name: str = None) -> bool:
+        if task_name not in self.config.settings.tasks:
+            return False
+        def print_status(status: str):
+            color = "\033[96m"
+            color_bold = "\033[96;1m"
+            reset = "\033[0m"
+            txt = f"{color}-> Task{reset} '{color_bold}{task_name}{reset}' {color}{status}{reset}"
+            print_text(state=self.state, text=txt)
+
+        print_status("started")
+        await self.main_loop(questions=self.config.settings.tasks[task_name] + ["quit"], print_questions=True)
+        print_status("finished")
+        return True
 
     def _print_status(self):
         self.loop_iterations += 1
