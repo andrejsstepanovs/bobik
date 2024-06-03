@@ -71,7 +71,6 @@ class LanguageModelProvider:
         model_params = self.config.settings.models.get(self.state.llm_model, {})
         if model_params.base_url is not None:
             provider_specific_params[provider_name]["base_url"] = model_params.base_url
-        print(provider_specific_params[provider_name])
 
         try:
             model = model_class(**common_params, **provider_specific_params[provider_name])
