@@ -167,44 +167,42 @@ io_output:
 
 tasks:
   news:
-    - quiet
-    - mistral-large
-    - agent
-    - Latest world news events.
-    - Latest breaking news events from europe.
-    - List events not related to sport.
+    - get_news trendingtopics
+    - get_news europe
+    - mistral-7b-llm         # cheap
+    - llm
+    - Use last conversation context and list news events that are not related to sport.
   calendar-today:
-    - mistral-large
-    - agent
-    - quiet
+    - calendar_events today  # manual tool call
+    - mistral-7b-llm         # cheap
+    - llm
     - >
-      List all Todays calendar events. 
-      Organize by time, show calendar name and make sure to mark important events.
+      Organize given calendar events by time, 
+      show calendar name and make sure to mark important events.
   weather-today:
-    - mistral-large
-    - agent
-    - quiet
+    - weather today          # manual tool call
+    - mistral-7b-llm         # cheap
+    - llm
     - > 
       What will be weather forecast today? 
       Answer with the list of times and short summary.
       Exclude forecast that was in the past.
       Temperature and rain is important.
   myday:
-    - news
-    - calendar-today
-    - weather-today
-    - mistral-large
+    - news                   # internal tool call
+    - calendar-today         # internal tool call
+    - weather-today          # internal tool call
+    - mistral-7b-llm         # cheap
     - llm
-    - quiet
-    - >
-      Prepare a list of my calendar events together with weather situation at the time.
-      Finish answer with top 3 most important news event.
+    - Summarize latest news, calendar events and weather forecast for today.
   tomorrow:
-    - mistral-large
-    - List all Tomorrow calendar events combined with Tomorrow weather forecast.
-    - mistral
+    - quiet
+    - weather today          # manual tool call
+    - calendar_events today  # manual tool call
+    - mistral-7b-llm         # cheap
     - llm
     - >
+      List all Tomorrow calendar events combined with Tomorrow weather forecast.
       Emphasize important calendar events. 
       Print them in the list format. 
       Also mention if it is good time to go for a jog.
