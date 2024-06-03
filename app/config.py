@@ -36,7 +36,6 @@ class Configuration:
             "ollama": "http://localhost:11434",
             "deepgram": "https://api.deepgram.com/v1/",
             "lm_studio": os.getenv("LMSTUDIO_PROVIDER_BASE_URL"),
-            "openai_custom": os.getenv("CUSTOM_PROVIDER_BASE_URL"),
             "runpod": "https://api.runpod.ai/v2/{endpoint_id}/openai/v1",
             "bing": {
                 "search": os.getenv("BING_SEARCH_URL"),

@@ -51,7 +51,6 @@ class LanguageModelProvider:
             "groq": {"groq_api_key": self.config.api_keys["groq"]},
             "openai": {"openai_api_key": self.config.api_keys["openai"]},
             "openai_custom": {
-                "base_url": self.config.urls["openai_custom"],
                 "openai_api_key": self.config.api_keys["openai_custom"],
             },
             "lm_studio": {
@@ -68,6 +67,11 @@ class LanguageModelProvider:
                 "openai_api_base": self.config.urls["runpod"].replace("{endpoint_id}", self.state.llm_model_options.endpoint_id if self.state.llm_model_options.endpoint_id else "unknown"),
             }
         }
+
+        model_params = self.config.settings.models.get(self.state.llm_model, {})
+        if model_params.base_url is not None:
+            provider_specific_params[provider_name]["base_url"] = model_params.base_url
+        print(provider_specific_params[provider_name])
 
         try:
             model = model_class(**common_params, **provider_specific_params[provider_name])

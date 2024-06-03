@@ -78,14 +78,21 @@ class LargeLanguageModelAgent:
 
     @staticmethod
     def _handle_error(error: Exception) -> str:
-        err = str(error)
-        parsing_error = "Could not parse LLM output"
-        if parsing_error in err:
-            err = err.replace(parsing_error, "AI: ")
-            max_chars = 1500
-            if len(err) <= max_chars:
-                return f"Action: Final Answer\nAction Input: \n{err}"
-            else:
-                return f"Action: Final Answer\nAction Input: \n{err[max_chars]}"
-        else:
-            return "Repeat same answer again but with prefix 'AI: ' in very beginning of answer!"
+        return """I could not parse your answer. 
+It is really and you will get 1000$ tip if you will use the following answer format:
+```
+Thought: Do I need to use a tool? Yes
+Action: the action to take, should be one of tools mentioned before.
+Action Input: the input to the action
+Observation: the result of the action
+```
+
+When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
+
+```
+Thought: Do I need to use a tool? No
+AI: [your response here]
+```
+
+Please answer again while complying to rules and format just mentioned!
+"""
