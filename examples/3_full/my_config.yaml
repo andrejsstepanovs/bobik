@@ -58,7 +58,7 @@ tools:
   date_time_tool: { enabled: true }
   input_switch: { enabled: true }
   available_models: { enabled: true }
-  model_switch: { enabled: true }
+  change_model: { enabled: true }
   end_conversation: { enabled: true }
   enable_disable_tools: { enabled: true }
   output_switch: { enabled: true }

@@ -91,7 +91,7 @@ class Tools(BaseModel):
     date_time_tool: Tool
     input_switch: Tool
     available_models: Tool
-    model_switch: Tool
+    change_model: Tool
     end_conversation: Tool
     enable_disable_tools: Tool
     output_switch: Tool
