@@ -61,7 +61,7 @@ class StateTransitionParser:
             if len(parts) > 1:
                 return parts[0].strip(), sep.join(parts[1:]).strip()
         return question, question
-
+    
     def change_state(self, commands: str = "") -> tuple[list[str], bool]:
         if not commands:
             return [], False
@@ -71,7 +71,7 @@ class StateTransitionParser:
 
         """Phrases that will be picked no matter where they are in the sentence."""
         for contains in [True, False]:
-            found_phrase, found = check_text_for_phrases(state=self.state, contains=True, phrases=self.config.phrases["run_once"], question=commands)
+            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["run_once"], question=commands, contains=contains)
             if found:
                 print_text(state=self.state, text="Run Once")
                 self.state.is_stopped = True
@@ -79,39 +79,39 @@ class StateTransitionParser:
 
             last = self.state.is_quiet
             self.state.is_quiet = True
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["quiet"], contains=contains, question=commands)
+            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["quiet"], question=commands, contains=contains)
             if found:
                 self.state.is_quiet = True
                 phrases_found.append(found_phrase)
             else:
                 self.state.is_quiet = last
 
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["verbose"], contains=contains, question=commands)
+            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["verbose"], question=commands, contains=False)
             if found:
                 print_text(state=self.state, text="Quiet mode OFF")
                 self.state.is_quiet = False
                 phrases_found.append(found_phrase)
 
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=["verbal"], contains=contains, question=commands)
+            found_phrase, found = check_text_for_phrases(state=self.state, phrases=["verbal"], question=commands, contains=False)
             if found:
                 self.state.set_input_model("listen")
                 self.state.set_output_model("speak")
                 print_text(state=self.state, text="Changed to verbal mode")
                 phrases_found.append(found_phrase)
 
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=["text"], question=commands, contains=contains)
+            found_phrase, found = check_text_for_phrases(state=self.state, phrases=["text"], question=commands, contains=False)
             if found:
                 self.state.set_input_model("text")
                 self.state.set_output_model("text")
                 print_text(state=self.state, text="Changed to text mode")
                 phrases_found.append(found_phrase)
 
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=list(self.config.settings.io_input.keys()), question=commands, contains=contains)
+            found_phrase, found = check_text_for_phrases(state=self.state, phrases=list(self.config.settings.io_input.keys()), question=commands, contains=False)
             if found:
                 self.state.set_input_model(found_phrase)
                 phrases_found.append(found_phrase)
 
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=list(self.config.settings.io_output.keys()), question=commands, contains=contains)
+            found_phrase, found = check_text_for_phrases(state=self.state, phrases=list(self.config.settings.io_output.keys()), question=commands, contains=False)
             if found:
                 self.state.set_output_model(found_phrase)
                 phrases_found.append(found_phrase)
