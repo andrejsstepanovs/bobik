@@ -22,10 +22,10 @@ class TestApp(unittest.TestCase):
 
         for questions, expected in test_cases:
             with patch('builtins.input', return_value=' '.join(questions)):
-                self.app.process_arguments(questions)
                 response = asyncio.run(self.app.answer(questions=questions))
                 for expected_output in expected:
                     self.assertIn(expected_output, response)
+
 
 if __name__ == '__main__':
     unittest.main()

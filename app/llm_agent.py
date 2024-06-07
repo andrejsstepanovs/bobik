@@ -46,6 +46,11 @@ class LargeLanguageModelAgent:
 
     def reload(self) -> None:
         self.load_memory()
+        if self.state.is_new_memory:
+            self.memory.clear()
+            self.loaded_prompts = {}
+            self.state.is_new_memory = False
+
         self.initialize_prompt()
         self.model = self.llm_provider.get_model()
         if not self.state.are_tools_enabled:

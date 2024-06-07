@@ -10,6 +10,7 @@ class ApplicationState:
         self.is_hotkey_enabled: bool = True
         self.is_stopped: bool = False
         self.is_quiet: bool = False
+        self.is_new_memory: bool = False
 
         self.are_tools_enabled: bool = None
         self.input_model: str = None
@@ -26,8 +27,9 @@ class ApplicationState:
 
     def get_hash(self) -> str:
         attributes = (
-            self.is_stopped,
+            # self.is_stopped,
             self.is_quiet,
+            self.is_new_memory,
             self.input_model,
             self.output_model,
             self.llm_model,

@@ -36,102 +36,49 @@ class StateTransitionParser:
         return was_changed, improved_text
 
     def is_empty(self, question: str = "") -> bool:
+        if not question:
+            return True
         return not question.strip()
 
-    def must_exit(self, question: str = "") -> bool:
-        found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["exit"], question=question)
-        if found:
-            print_text(state=self.state, text="Exiting conversation")
-            self.state.stop = True
-            return True
-        return False
-
-    def must_clear_memory(self, question: str = "") -> bool:
-        found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["clear_memory"], question=question, contains=False)
-        if found:
-            print_text(state=self.state, text="Clearing memory")
-            return True
-        return False
-
-    def split(self, question: str = "") -> Tuple[str, str]:
-        question = question.strip()
-        sep = self.config.phrases["separator"][0]
-        if sep in question:
-            parts = question.split(sep)
-            if len(parts) > 1:
-                return parts[0].strip(), sep.join(parts[1:]).strip()
-        return question, question
-    
     def change_state(self, commands: str = "") -> tuple[list[str], bool]:
-        if not commands:
-            return [], False
-
-        commands = commands[:-1] if commands.endswith('.') or commands.endswith('!') else commands
-        phrases_found: list[str] = []
-
-        """Phrases that will be picked no matter where they are in the sentence."""
-        for contains in [True, False]:
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["run_once"], question=commands, contains=contains)
-            if found:
-                print_text(state=self.state, text="Run Once")
-                self.state.is_stopped = True
-                phrases_found.append(found_phrase)
-
-            last = self.state.is_quiet
-            self.state.is_quiet = True
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["quiet"], question=commands, contains=contains)
-            if found:
-                self.state.is_quiet = True
-                phrases_found.append(found_phrase)
-            else:
-                self.state.is_quiet = last
-
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["verbose"], question=commands, contains=False)
-            if found:
-                print_text(state=self.state, text="Quiet mode OFF")
-                self.state.is_quiet = False
-                phrases_found.append(found_phrase)
-
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=["verbal"], question=commands, contains=False)
-            if found:
-                self.state.set_input_model("listen")
-                self.state.set_output_model("speak")
-                print_text(state=self.state, text="Changed to verbal mode")
-                phrases_found.append(found_phrase)
-
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=["text"], question=commands, contains=False)
-            if found:
-                self.state.set_input_model("text")
-                self.state.set_output_model("text")
-                print_text(state=self.state, text="Changed to text mode")
-                phrases_found.append(found_phrase)
-
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=list(self.config.settings.io_input.keys()), question=commands, contains=False)
-            if found:
-                self.state.set_input_model(found_phrase)
-                phrases_found.append(found_phrase)
-
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=list(self.config.settings.io_output.keys()), question=commands, contains=False)
-            if found:
-                self.state.set_output_model(found_phrase)
-                phrases_found.append(found_phrase)
-
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=list(self.config.settings.models.keys()), question=commands, contains=contains)
-            if found:
-                self.state.set_llm_model(found_phrase)
-                print_text(state=self.state, text=f"Changed model to {self.state.llm_model}")
-                phrases_found.append(found_phrase)
-
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["no_tools"], question=commands, contains=contains)
-            if found:
-                print_text(state=self.state, text="No Tools")
-                self.state.are_tools_enabled = False
-                phrases_found.append(found_phrase)
-
-            found_phrase, found = check_text_for_phrases(state=self.state, phrases=self.config.phrases["with_tools"], question=commands, contains=contains)
-            if found:
-                print_text(state=self.state, text="With Tools (Agent)")
-                self.state.are_tools_enabled = True
-                phrases_found.append(found_phrase)
+        phrases_found = []
+        for part in commands.split():
+            part = part[:-1] if part.endswith('.') or part.endswith('!') else part
+            changed = self._change_one_state(phrase=part.strip())
+            if not changed:
+                break
+            phrases_found.extend(changed)
 
         return phrases_found, len(phrases_found) > 0
+
+    def _change_one_state(self, phrase: str = "") -> list[str]:
+        if self.is_empty(question=phrase):
+            return []
+        phrases_config = self.config.phrases
+
+        actions = [
+            {"phrases": phrases_config["exit"], "action": lambda: setattr(self.state, 'is_stopped', True)},
+            {"phrases": phrases_config["clear_memory"], "action": lambda: setattr(self.state, 'is_new_memory', True)},
+            {"phrases": phrases_config["run_once"], "action": lambda: setattr(self.state, 'is_stopped', True)},
+            {"phrases": phrases_config["quiet"], "action": lambda: setattr(self.state, 'is_quiet', True)},
+            {"phrases": phrases_config["verbose"], "action": lambda: setattr(self.state, 'is_quiet', False)},
+            {"phrases": ["verbal"], "action": lambda: (setattr(self.state, 'input_model', "listen"), setattr(self.state, 'output_model', "speak"))},
+            {"phrases": ["text"], "action": lambda: (setattr(self.state, 'input_model', "text"), setattr(self.state, 'output_model', "text"))},
+            {"phrases": list(self.config.settings.io_input.keys()), "action": lambda phrase: setattr(self.state, 'input_model', phrase)},
+            {"phrases": list(self.config.settings.io_output.keys()), "action": lambda phrase: setattr(self.state, 'output_model', phrase)},
+            {"phrases": list(self.config.settings.models.keys()), "action": lambda phrase: setattr(self.state, 'llm_model', phrase)},
+            {"phrases": phrases_config["no_tools"], "action": lambda: setattr(self.state, 'are_tools_enabled', False)},
+            {"phrases": phrases_config["with_tools"], "action": lambda: setattr(self.state, 'are_tools_enabled', True)},
+        ]
+
+        for action in actions:
+            found_phrase, found = check_text_for_phrases(phrases=action["phrases"], question=phrase, contains=False, state=self.state)
+            if found:
+                if action["action"].__code__.co_argcount == 0:
+                    action["action"]()
+                else:
+                    action["action"](found_phrase)
+
+                return [found_phrase]
+
+        return []

@@ -31,11 +31,11 @@ def check_text_for_phrases(state: ApplicationState, question: str, phrases: List
     for phrase in phrases:
         if contains:
             if phrase in response_lower:
-                print_text(state=state, text=f"phrase '{phrase}' detected.")
+                #print_text(state=state, text=f"phrase '{phrase}' detected.")
                 return phrase, True
         else:
             if phrase in [response_lower, response_lower + "."]:
-                print_text(state=state, text=f"phrase '{phrase}' detected.")
+                #print_text(state=state, text=f"phrase '{phrase}' detected.")
                 return phrase, True
     return "", False
 

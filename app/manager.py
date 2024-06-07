@@ -12,6 +12,7 @@ from .llm_provider import LanguageModelProvider
 from .io_input import UserInput
 from .my_print import print_text
 from .history import History
+from .settings import Settings
 
 
 class ConversationManager:
@@ -62,7 +63,7 @@ class ConversationManager:
             parser=self.parser,
         )
 
-    def reload_agent(self, force: bool = False):
+    def reload_agent(self, force: bool = False) -> LargeLanguageModelAgent:
         if self.current_state_hash != self.state.get_hash() or force:
             self.current_state_hash = self.state.get_hash()
             print_text(state=self.state, text="Loading LLM...")
@@ -99,23 +100,21 @@ class ConversationManager:
         else:
             await self.user_input.ask_input()
 
+        if self.user_input.get() == "help":
+            self.print_help()
+            return False
+
         if await self._tasks(question):
             return False
 
-        commands, question = self.parser.split(self.user_input.get())
-
-        if self.parser.must_exit(question=commands):
-            return True
-
-        if self.parser.must_clear_memory(question=commands):
-            self.clear_memory()
-            return False
-
-        found_phrases, found = self.parser.change_state(commands=commands)
+        clean_questions, found = self.pre_parse_questions(questions=[self.user_input.get()])
         if found:
-            self.reload_agent(force=True)
+            if self.state.is_stopped:
+                return True
+            self.reload_agent()
             return False
 
+        question = clean_questions[0]
         if self.parser.is_empty(question):
             return False
 
@@ -212,3 +211,119 @@ class ConversationManager:
             f"{yellow}{self.state.output_model}{reset}"
         )
         print_text(state=self.state, text=formatted_string)
+
+    def pre_parse_questions(self, questions: list[str]) -> tuple[list[str], bool]:
+        cleaned_questions: list[str] = list[str]()
+        something_found = False
+        for question in questions:
+            found_phrases, found = self.parser.change_state(commands=question)
+            if not found:
+                cleaned_questions.append(question)
+                continue
+
+            something_found = True
+            print_text(state=self.state, text=f"found_phrases: {', '.join(found_phrases)}")
+            new_question = question.replace(" ".join(found_phrases), "").strip()
+            if new_question:
+                cleaned_questions.append(new_question)
+
+        return cleaned_questions, something_found
+
+    def print_help(self):
+        print("Usage: run.py [--quit] [pre-parser commands] [question]")
+        print("")
+        print("Available pre-parser commands:")
+        print("  Switch between agent and normal mode.")
+        print("  With agent:")
+        for phrase in self.config.phrases["with_tools"]:
+            print(f"    - {phrase}")
+        print("")
+        print("  No agent:")
+        for phrase in self.config.phrases["no_tools"]:
+            print(f"    - {phrase}")
+        print("  ")
+        print("  Quit:")
+        for phrase in self.config.phrases["exit"]:
+            print(f"    - {phrase}")
+        print("")
+        print("  Select model by typing its name.")
+        print("  Available models:")
+
+        settings: Settings = self.config.settings
+        providers_with_api_keys = {
+            "google": "google",
+            "mistral": "mistral",
+            "groq": "groq",
+            "openai": "openai",
+            "openai_custom": ("openai_custom", "openai_custom"),
+            "lm_studio": "openai_custom",
+            "ollama": None
+        }
+
+        for model_name, model_config in settings.models.items():
+            if not model_config.model:
+                continue
+            provider_key = providers_with_api_keys.get(model_config.provider)
+            if provider_key is None:
+                continue
+            if isinstance(provider_key, tuple):
+                api_key, url_key = provider_key
+                if self.config.api_keys.get(api_key) is None or self.config.urls.get(url_key) is None:
+                    continue
+            elif self.config.api_keys.get(provider_key) is None:
+                continue
+            print(f"    - {model_name} ({model_config.provider} / {model_config.model})")
+
+        print("")
+        print("  Available Input methods:")
+        for model_name, model_config in settings.io_input.items():
+            if model_config.provider == "deepgram_settings" and self.config.api_keys["deepgram"] is None:
+                continue
+            print(f"    - {model_name} ({model_config.provider} / {model_config.model})")
+        print("")
+        print("  Available Output methods:")
+        for model_name, model_config in self.config.settings.io_output.items():
+            if model_config.provider == "deepgram_settings" and self.config.api_keys["deepgram"] is None:
+                continue
+            print(f"    - {model_name} ({model_config.provider} / {model_config.model}")
+
+        print("")
+        print("  Available pre-parser enrichers:")
+        for enricher in self.parser.enrichers:
+            print(f"   - {enricher.name()}: {enricher.description()}")
+            print(f"        phrases: {', '.join(enricher.phrases())}")
+
+        print("")
+        print("  Available agent tools:")
+        tool_loader = ToolLoader(config=self.config, state=self.state)
+        for name in tool_loader.available_tool_names():
+            print(f"   - {name}")
+
+        print("")
+        print("  Available tasks:")
+        for name, commands in self.config.settings.tasks.items():
+            print(f"   - {name}:")
+            for command in commands:
+                print(f"     - {command}")
+
+        print("")
+        print("  Examples:")
+        print("  - python run.py once quit .. What is the capital of France")
+        print("  - python run.py once quit llm speak What is the capital of France")
+        print("  - echo \"what is capital of France?\" | python run.py once quiet llm speak")
+        print("  - echo \"What is capital of France? Answer with 1 word.\" | python run.py once quiet llm")
+        print("  - echo \"What is capital of France? Answer with 1 word.\" | python run.py once quiet llm > France.txt")
+        print("  - cat file.py | python run.py once quiet code add comments to the code. Answer only with code. > file.py")
+        print("  - # example of model switching")
+        print("  - python run.py")
+        print("  - > Tell me a story.")
+        print("  - > gpt3")
+        print("  - > summarize the story")
+        print("  - > quit")
+        print("  - # example of model and agent switching")
+        print("  - python run.py llm groq")
+        print("  - > Tell me a story.")
+        print("  - > gpt3")
+        print("  - > agent")
+        print("  - > summarize the story")
+        print("  - > quit")

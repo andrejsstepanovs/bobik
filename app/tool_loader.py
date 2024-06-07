@@ -60,7 +60,7 @@ class ToolLoader:
             "output_switch": lambda: self.add_tool(state_tools.SwitchOutputMethod(state=self.state)),
             "input_switch": lambda: self.add_tool(state_tools.SwitchInputMethod(state=self.state)),
             "date_time_tool": lambda: self.add_tool(datetime_tools.TimeTool()),
-            "clear_memory": lambda: self.add_tool(state_tools.ResetChat(memory=self.memory)),
+            "clear_memory": lambda: self.add_tool(state_tools.ResetChat(state=self.state)),
             "wikipedia": lambda: self.tools.extend(load_tools(['wikipedia'])),
             "google_search": lambda: self.tools.extend(load_tools(["serpapi"])) if self.config.api_keys["serpapi"] else None,
         }

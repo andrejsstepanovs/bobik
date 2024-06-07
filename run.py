@@ -11,7 +11,6 @@ def main() -> None:
     app: App = App()
 
     input_question = sys.argv[1:]
-    app.process_arguments(input_question)
 
     question: str = " ".join(input_question) + app.stdin_input()
     app.conversation(questions=[question])

@@ -56,10 +56,10 @@ class ResetChat(BaseTool):
         "Use this tool when phrases like 'forget this conversation', "
         "'lets change the topic', 'forget about that' or similar is mentioned. "
     )
-    memory: ConversationBufferMemory = None
+    state: ApplicationState = None
 
     def _run(self, something: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        self.memory.clear()
+        self.state.is_new_memory = True
         return "AI: Cleared this conversation."
 
 

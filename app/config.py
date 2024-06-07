@@ -60,7 +60,6 @@ class Configuration:
         }
 
         self.phrases: Dict[str, List[str]] = {
-            "separator": [" .."],
             "exit": settings.phrases.exit,
             "clear_memory": settings.phrases.clear_memory,
             "run_once": settings.phrases.run_once,
