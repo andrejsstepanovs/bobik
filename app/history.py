@@ -5,6 +5,7 @@ from .state import ApplicationState
 from .llm_agent import LargeLanguageModelAgent
 from .parsers import StateTransitionParser
 from .io_input import UserInput
+from langchain_core.chat_history import BaseMessage
 
 
 class History:
@@ -19,12 +20,26 @@ class History:
         if not self.state.are_tools_enabled or force:
             if who == self.config.agent_name:
                 self.agent.memory.save_context({"input": self.user_input.get()}, {"output": text})
+                self.agent.memory.chat_memory.messages = self._remove_history_duplicates(messages=self.agent.memory.chat_memory.messages)
 
         if self.config.history_file:
             with open(self.config.history_file, "a") as file:
                 datetime = time.strftime("%Y-%m-%d %H:%M:%S")
                 content = self.format_text(f"{datetime} {who}: {text}")
                 file.write(content+"\n")
+
+    @staticmethod
+    def _remove_history_duplicates(messages: List[BaseMessage]) -> List[BaseMessage]:
+        unique_messages: List[BaseMessage] = []
+        message_set = set()
+
+        for message in reversed(list(messages)):
+            message_str = message.pretty_repr()
+            if message_str not in message_set:
+                unique_messages.append(message)
+                message_set.add(message_str)
+
+        return unique_messages[::-1]
 
     @staticmethod
     def format_text(text: str) -> str:
