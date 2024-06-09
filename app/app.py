@@ -26,12 +26,12 @@ class App:
         self.llm_agent: LargeLanguageModelAgent = None
         self.tool_provider: ToolLoader = None
 
-        self.settings: Settings = self._load_settings(config_file)
+        self.settings: Settings = self.load_settings(config_file)
         self.config: Configuration = Configuration(settings=self.settings)
         self.state: ApplicationState = ApplicationState(config=self.config)
         self.pre_parser: StateTransitionParser = StateTransitionParser(config=self.config, state=self.state)
 
-    def _load_settings(self, config_file: str = None) -> Settings:
+    def load_settings(self, config_file: str = None) -> Settings:
         env_name = "BOBIK_CONFIG_FILE"
         if config_file is None:
             config_file: str = os.getenv(env_name)

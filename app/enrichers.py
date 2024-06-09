@@ -27,15 +27,14 @@ class PreParserInterface:
 
 
 def check_text_for_phrases(state: ApplicationState, question: str, phrases: List[str], contains: bool = False) -> tuple[str, bool]:
-    response_lower: str = question.lower()
+    question: str = question.lower()
+    parts = question.split()
     for phrase in phrases:
-        if contains:
-            if phrase in response_lower:
-                #print_text(state=state, text=f"phrase '{phrase}' detected.")
+        if not contains:
+            if phrase == parts[0]:
                 return phrase, True
         else:
-            if phrase in [response_lower, response_lower + "."]:
-                #print_text(state=state, text=f"phrase '{phrase}' detected.")
+            if phrase in parts:
                 return phrase, True
     return "", False
 
