@@ -21,7 +21,7 @@ and moves all configuration to user via config files.
 As a user, you need to set up necessary api keys and config file location in 
 `.env` file and define your models, tools, providers, etc. in `my_config.yaml` file.
 
-See examples folder for more info.
+See `docs/examples` folder for more info.
 
 ### shortcut
 You can create a shortcut function in your shell to run the app more easily.
@@ -45,7 +45,7 @@ To install the AI Assistant, follow these steps:
 1. Install ffplay if you want to have audio output.
 2. Clone the repository from GitHub.
 3. Install the required packages using `pip install -r requirements.txt`.
-4. See `examples` to set up necessary environment variables and config yaml file.
+4. See `docs/examples` to set up necessary environment variables and config yaml file.
 5. Run the `run.py` script to start the AI Assistant.
 
 ## Windows

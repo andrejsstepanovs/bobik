@@ -4,7 +4,7 @@ import sys
 # get rid of deprecation warning stdout.
 import warnings ; warnings.warn = lambda *args,**kwargs: None
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-from app.app import App
+from src.app import App
 
 
 def main() -> None:
@@ -17,8 +17,9 @@ def main() -> None:
 
     # example of programmatic use
     # app.tool_provider.add_tool(mytool())
-    # answer = app.answer(questions=["agent", "code", "refactor following code", "CODE"])
-    # app.manager.clear_memory()
+    # answer: str = app.answer(questions=["llm gpt4o", "refactor following code file /full/path/to/file.py"])
+    # app.get_manager().clear_memory()
 
 if __name__ == "__main__":
     main()
+
