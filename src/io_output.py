@@ -31,7 +31,7 @@ class TextToSpeech:
 
         if stream:
             if not self.state.is_quiet:
-                print(f"{self.config.agent_name}: ", end="")
+                print(f"\033[35m{self.config.agent_name}:\033[0m ", end="")
             for chunk in agent_response:
                 txt = self._response_to_str(response=chunk, is_quiet=self.state.is_quiet)
                 print(txt, end="", flush=True)

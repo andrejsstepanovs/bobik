@@ -1,3 +1,5 @@
+import time
+import os
 from typing import List, Set
 from .config import Configuration
 from .state import ApplicationState
@@ -5,7 +7,6 @@ from .llm_agent import LargeLanguageModelAgent
 from .parsers import StateTransitionParser
 from .io_input import UserInput
 from langchain_core.chat_history import BaseMessage
-import time
 
 
 class History:
@@ -20,13 +21,22 @@ class History:
         if not self.state.are_tools_enabled or force:
             if who == self.config.agent_name:
                 self.agent.get_memory().save_context({"input": self.user_input.get()}, {"output": text})
-                self.agent.get_memory().chat_memory.messages = self._remove_history_duplicates(messages=self.agent.get_memory().chat_memory.messages)
+                self.remove_history_duplicates()
 
         if self.config.history_file:
             with open(self.config.history_file, "a") as file:
                 datetime: str = time.strftime("%Y-%m-%d %H:%M:%S")
                 content: str = self.format_text(f"{datetime} {who}: {text}")
                 file.write(content+"\n")
+
+    def remove_history_duplicates(self):
+        messages = self.agent.get_memory().chat_memory.messages
+        if messages:
+            self.agent.get_memory().chat_memory.messages = self._remove_history_duplicates(messages=messages)
+
+    def get_messages(self) -> str:
+        self.remove_history_duplicates()
+        return str(self.agent.get_memory().chat_memory)
 
     @staticmethod
     def _remove_history_duplicates(messages: List[BaseMessage]) -> List[BaseMessage]:

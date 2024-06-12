@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import threading
+import pyperclip
 import os
 from .alt import AltKeyDoublePressDetector
 from .config import Configuration
@@ -8,6 +9,7 @@ from .state import ApplicationState
 from .transcript import Transcript
 from .pkg.beep import BeepGenerator
 from .my_print import print_text
+import sys
 from deepgram import (
     DeepgramClient,
     DeepgramClientOptions,
@@ -91,6 +93,7 @@ class UserInput:
         self.transcript_collector = transcript_collector
         self.beep = beep
         self.question_text = ""
+        self._ignore_next_questions: int = None
 
     async def ask_input(self):
         if self.state.input_model_options.provider != "text":
@@ -115,7 +118,30 @@ class UserInput:
                 callback=self.set,
             )
         else:
-            text: str = input(f"{self.config.user_name}: ")
+            if self._ignore_next_questions is not None:
+                self._ignore_next_questions -= 1
+                if self._ignore_next_questions > 1:
+                    input("")
+                    sys.stdout.write("\033[F")  # Cursor up one line
+                    self.set("")
+                    return
+                else:
+                    self._ignore_next_questions = None
+
+            text: str = input(f"\033[33m{self.config.user_name}:\033[0m ")
+
+            # Check if clipboard content exists and appended it to the question.
+            clipboard = pyperclip.paste()
+            if len(clipboard) > 0:
+                clipboard_parts = clipboard.split(os.linesep)
+                if len(clipboard_parts) > 1:
+                    if text.endswith(clipboard_parts[0]):
+                        if self._ignore_next_questions is None:
+                            self._ignore_next_questions = len(clipboard_parts)
+                        for line in clipboard_parts[1:]:
+                            print(line)
+                            text += f"{os.linesep}{line}"
+
             self.set(text)
 
     def set(self, text: str):

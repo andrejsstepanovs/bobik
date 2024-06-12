@@ -62,6 +62,7 @@ class ConversationManager:
             user_input=self.user_input,
             parser=self.parser,
         )
+        self._last_question: str = ""
 
     def reload_agent(self, force: bool = False) -> LargeLanguageModelAgent:
         if self.current_state_hash != self.state.get_hash() or force:
@@ -78,7 +79,7 @@ class ConversationManager:
     async def main_loop(self, questions: list[str] = None, print_questions: bool = False):
         async def answer(question: str = None):
             if print_questions:
-                print(f"{self.config.user_name}: \033[32;1m {question} \033[0m")
+                print(f"{self.config.user_name}: \033[33m;1m {question} \033[0m")
             stop = await self.question_answer(question=question)
             return stop or self.state.is_stopped
 
@@ -92,15 +93,15 @@ class ConversationManager:
                 return
 
     async def question_answer(self, question: str = None) -> bool:
-        # if self.agent.model is None:
-        #     self.reload_agent(force=False)
-
-        self._print_status()
+        if self._last_question != "" or question != "":
+            self._print_status()
 
         if question:
             self.user_input.set(question)
         else:
             await self.user_input.ask_input()
+
+        self._last_question = self.user_input.get()
 
         if self.user_input.get() == "help":
             self.print_help()
@@ -139,9 +140,14 @@ class ConversationManager:
             try:
                 text = f"{self.config.user_name}: {self.user_input.get()}"
                 if not self.state.are_tools_enabled:
-                    text = str(self.agent.get_memory().chat_memory) + "\n\n" + text
-                text = text.lstrip()
-                self._process(question=text)
+                    text = self.history.get_messages() + "\n\n" + text
+
+                self._process(question=text.lstrip())
+
+                self.history.save(self.config.agent_name, self.answer_text)
+                if self.state.is_stopped:
+                    return True
+
                 self.user_input.set("")
                 break
             except KeyboardInterrupt:
@@ -156,15 +162,11 @@ class ConversationManager:
                 tries += 1
                 time.sleep(sleep_sec)
 
-    def _process(self, question: str = ""):
+    def _process(self, question: str = "") -> str:
         stream = not self.state.is_quiet and not self.state.are_tools_enabled
 
         response = self.agent.ask_question(text=question, stream=stream)
         self.answer_text = self.response.write_response(stream=stream, agent_response=response)
-
-        self.history.save(self.config.agent_name, self.answer_text)
-        if self.state.is_stopped:
-            return
 
         self.response.respond(self.answer_text)
 
