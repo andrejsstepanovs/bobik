@@ -79,7 +79,7 @@ class ConversationManager:
     async def main_loop(self, questions: list[str] = None, print_questions: bool = False):
         async def answer(question: str = None):
             if print_questions:
-                print(f"{self.config.user_name}: \033[33m;1m {question} \033[0m")
+                print(f"{self.config.user_name}: \033[33m[1m {question} \033[0m")
             stop = await self.question_answer(question=question)
             return stop or self.state.is_stopped
 
@@ -186,7 +186,7 @@ class ConversationManager:
             return False
         def print_status(status: str):
             color = "\033[96m"
-            color_bold = "\033[96;1m"
+            color_bold = "\033[96[1m"
             reset = "\033[0m"
             txt = f"{color}-> Task{reset} '{color_bold}{task_name}{reset}' {color}{status}{reset}"
             print_text(state=self.state, text=txt)

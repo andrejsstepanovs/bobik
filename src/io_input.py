@@ -51,7 +51,7 @@ async def _listen_to_input(config: Configuration, state: ApplicationState, trans
                     full_sentence: str = transcript_collector.retrieve_transcript()
                     if len(full_sentence.strip()) > 0:
                         full_sentence = full_sentence.strip()
-                        print_text(state=state, text=f"{config.user_name}: \033[32;1m {full_sentence} \033[0m")
+                        print_text(state=state, text=f"{config.user_name}: \033[32[1m {full_sentence} \033[0m")
                         callback(full_sentence)
                         transcript_collector.clear_transcript()
                         transcription_complete.set()
