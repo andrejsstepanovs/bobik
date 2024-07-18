@@ -22,9 +22,7 @@ class WeatherTool(BaseTool):
     cache: dict = {}
     config: Configuration = None
 
-    def _run(self, date: str = None, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
-        """Use the tool."""
-
+    def _run(self, date: Optional[str] = "Today", run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         now: datetime = datetime.now()
         filter_date: Optional[datetime] = dateparser.parse(date) if date else None
         filter_date_date: str = filter_date.strftime("%Y-%m-%d") if filter_date else now.strftime("%Y-%m-%d")

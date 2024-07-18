@@ -16,6 +16,7 @@ from .config import Configuration
 from .state import ApplicationState
 from .tools.weather import WeatherTool
 from .pkg.my_calendar import Calendar
+from typing import Any, Dict, List, Union, Optional
 
 
 class ToolLoader:
@@ -51,7 +52,7 @@ class ToolLoader:
         tool_config_methods = {
             "bing_search": lambda: self.add_tool(self._get_bing_search_tool()),
             "bing_news": lambda: self.add_tool(self._get_bing_news_tool()),
-            "wttr_weather": lambda: self.add_tool(WeatherTool(config=self.config)),
+            "wttr_weather": lambda: self.add_tool(self._get_weather_tool()),
             "ics_calendar": lambda: self.add_tool(self._get_calendar_tool()),
             "enable_disable_tools": lambda: self.add_tool(state_tools.SetToolUsage(state=self.state)),
             "end_conversation": lambda: self.add_tool(state_tools.EndConversation(state=self.state)),
@@ -72,7 +73,9 @@ class ToolLoader:
     def call_tool(self, name: str, param: str = None) -> tuple[str, str]:
         for tool in self.get_tools():
             if tool.name == name:
-                response = tool.run(tool_input=param, verbose=True)
+                input: Union[str, Dict[str, Any]] = param
+                verbose: Optional[bool] = True
+                response = tool.run(tool_input=input, verbose=verbose)
                 return name, str(response)
         return "", ""
 
@@ -109,6 +112,9 @@ class ToolLoader:
                 bing_search_url=self.config.urls["bing"]["news"],
                 subscription_key=self.config.api_keys["bing"],
             )
+
+    def _get_weather_tool(self) -> BaseTool:
+        return WeatherTool(config=self.config)
 
     def _get_calendar_tool(self) -> BaseTool:
         calendar_config_file = self.config.settings.tools.ics_calendar.config_file
