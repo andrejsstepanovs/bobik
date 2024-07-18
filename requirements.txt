@@ -15,3 +15,4 @@ simpleaudio~=1.0.4
 typing~=3.7.4.3
 deepgram-sdk~=3.4.0
 pytest~=8.2.2
+wikipedia~=1.4.0
