@@ -168,8 +168,8 @@ my_history.txt
 /my_config.yaml
 my_calendar.yaml
 prompts/*
-!prompts/system_prompt.txt
-!prompts/code_prompt.txt
+!prompts/system_prompt.md
+!prompts/code_prompt.md
 calendar_cache.pkl
 .aider*
 .settings.json

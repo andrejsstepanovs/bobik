@@ -3,7 +3,7 @@
 # -- .env --
 # BOBIK_CONFIG_FILE=PATH_TO\computer\examples\1_minimal_groq\my_config.yaml
 prompts:
-  default: system_prompt.txt
+  default: system_prompt.md
 history:
   enabled: false
 agent:

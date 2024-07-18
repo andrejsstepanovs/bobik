@@ -1,7 +1,7 @@
 ---
 prompts:
-  default: system_prompt.txt
-  code: /full_path_to/code_prompt.txt
+  default: system_prompt.md
+  code: /full_path_to/code_prompt.md
   # private: /full_path_to/private_prompt.txt
 history:
   # enable to store all questions and answers to file. Always appends (for now).
@@ -45,7 +45,7 @@ pre_parsers:
   # clipboard tool will add your active clipboard text on top of the question. Make sure word `clipboard` is part of question for this to happen.
   # example question: "Summarize my clipboard"
   clipboard: { enabled: true }
-  # each time time, and other time related words will be used, time will be added. This can be not what you want for some, specific cases. For example, see `code` model that is defined in this example. 
+  # each time time, and other time related words will be used, time will be added. This can be not what you want for some, specific cases. For example, see `code` model that is defined in this example.
   # There using this pre-parser will not be ideal, as we would send to LLM something not related to code.
   time: { enabled: true }
   # each time file or code is mentioned together with path to file. If file is found, it will be added to question as extra context.
