@@ -4,6 +4,7 @@ from src.state import ApplicationState
 import pyperclip
 import time
 import re
+import os
 from pathlib import Path
 
 
@@ -86,9 +87,13 @@ class LocalFile(PreParserInterface):
 
     def parse(self, question: str) -> Tuple[bool, str]:
         found = False
-        paths = re.findall(r'[\w\./\\]+', question)
+        paths = re.findall(r'[\w\./\\-]+', question)
         existing_paths = [Path(path) for path in paths if Path(path).exists()]
         for path in existing_paths:
+            # allow only absolute file paths.
+            if not os.path.isabs(path):
+                continue
+
             try:
                 with open(path, 'r') as file:
                     found = True
