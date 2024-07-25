@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, Dict, List
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
-from src.config import Configuration
+from ..config import Configuration
 import dateparser
 
 

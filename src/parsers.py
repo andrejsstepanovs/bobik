@@ -1,5 +1,5 @@
-from src.enrichers import check_text_for_phrases, CurrentTime, Clipboard, LocalFile, PreParserInterface
-from typing import List, Tuple
+from .enrichers import check_text_for_phrases, CurrentTime, Clipboard, LocalFile, PreParserInterface
+from typing import List
 from .state import ApplicationState
 from .config import Configuration
 from .my_print import print_text

@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from typing import Tuple, Set
-from src.state import ApplicationState
+from .state import ApplicationState
 import pyperclip
 import time
 import re

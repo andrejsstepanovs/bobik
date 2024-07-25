@@ -1,5 +1,4 @@
 import time
-import os
 from typing import List, Set
 from .config import Configuration
 from .state import ApplicationState

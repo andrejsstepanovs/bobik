@@ -1,5 +1,3 @@
-from typing import List
-import os
 import yaml
 from langchain.agents import load_tools
 from langchain_core.tools import BaseTool
@@ -11,7 +9,6 @@ from .tools import state as state_tools
 from .tools import news as news_tools
 from .tools import datetime as datetime_tools
 from .tools import my_calendar as calendar_tools
-from .my_print import print_text
 from .config import Configuration
 from .state import ApplicationState
 from .tools.weather import WeatherTool

@@ -6,6 +6,10 @@ import warnings ; warnings.warn = lambda *args,**kwargs: None
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 from src.app import App
 
+# if bobik installed as submodule
+# sys.path.append("bobik")
+# from bobik.src.app import App
+
 
 def main() -> None:
     app: App = App()

@@ -8,8 +8,8 @@ import pytz
 import numpy
 import pickle
 import recurring_ical_events
-import src.state as AppStatus
-from src.parsers import print_text
+from ..state import ApplicationState as AppStatus
+from ..my_print import print_text
 from typing import Any
 
 

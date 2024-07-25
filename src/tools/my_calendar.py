@@ -4,7 +4,7 @@ import dateparser
 import json
 from langchain.tools import BaseTool
 from langchain_core.callbacks import CallbackManagerForToolRun
-from src.pkg.my_calendar import Calendar
+from ..pkg.my_calendar import Calendar
 
 
 class CalendarEventTool(BaseTool):
