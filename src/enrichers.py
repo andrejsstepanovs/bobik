@@ -95,7 +95,7 @@ class LocalFile(PreParserInterface):
                 continue
 
             try:
-                with open(path, 'r') as file:
+                with open(path, 'rb') as file:
                     found = True
                     content = file.read()
                     filename = path.name
