@@ -5,6 +5,7 @@ from .my_print import print_text
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import GoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 from langchain_mistralai.chat_models import ChatMistralAI
 from langchain_community.llms import VLLMOpenAI
 
@@ -30,6 +31,7 @@ class LanguageModelProvider:
             "mistral": ChatMistralAI,
             "groq": ChatGroq,
             "openai": ChatOpenAI,
+            "anthropic": ChatAnthropic,
             "openai_custom": ChatOpenAI,
             "runpod": VLLMOpenAI,
             "lm_studio": ChatOpenAI,
@@ -50,6 +52,7 @@ class LanguageModelProvider:
             "mistral": {"mistralai_api_key": self.config.api_keys["mistral"]},
             "groq": {"groq_api_key": self.config.api_keys["groq"]},
             "openai": {"openai_api_key": self.config.api_keys["openai"]},
+            "anthropic": {"anthropic_api_key": self.config.api_keys["anthropic"]},
             "openai_custom": {
                 "openai_api_key": self.config.api_keys["openai_custom"],
             },

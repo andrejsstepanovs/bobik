@@ -256,6 +256,7 @@ class ConversationManager:
         settings: Settings = self.config.settings
         providers_with_api_keys = {
             "google": "google",
+            "anthropic": "anthropic",
             "mistral": "mistral",
             "groq": "groq",
             "openai": "openai",
