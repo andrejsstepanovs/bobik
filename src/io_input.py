@@ -130,17 +130,20 @@ class UserInput:
 
             text: str = input(f"\033[33m{self.config.user_name}:\033[0m ")
 
-            # Check if clipboard content exists and appended it to the question.
-            clipboard = pyperclip.paste()
-            if len(clipboard) > 0:
-                clipboard_parts = clipboard.split(os.linesep)
-                if len(clipboard_parts) > 1:
-                    if text.endswith(clipboard_parts[0]):
-                        if self._ignore_next_questions is None:
-                            self._ignore_next_questions = len(clipboard_parts)
-                        for line in clipboard_parts[1:]:
-                            print(line)
-                            text += f"{os.linesep}{line}"
+            try:
+                # Check if clipboard content exists and appended it to the question.
+                clipboard = pyperclip.paste()
+                if len(clipboard) > 0:
+                    clipboard_parts = clipboard.split(os.linesep)
+                    if len(clipboard_parts) > 1:
+                        if text.endswith(clipboard_parts[0]):
+                            if self._ignore_next_questions is None:
+                                self._ignore_next_questions = len(clipboard_parts)
+                            for line in clipboard_parts[1:]:
+                                print(line)
+                                text += f"{os.linesep}{line}"
+            except pyperclip.PyperclipException:
+                pass
 
             self.set(text)
 
