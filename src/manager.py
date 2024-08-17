@@ -175,7 +175,8 @@ class ConversationManager:
         if len(parts) == 0 or len(parts) > 2:
             return ""
 
-        tool_name, tool_call_response = self.tool_loader.call_tool(name=parts[0], param=parts[1] if len(parts) == 2 else None)
+        param = parts[1] if len(parts) == 2 else None
+        tool_name, tool_call_response = self.tool_loader.call_tool(name=parts[0], param=param)
         if tool_name != "" and tool_call_response != "":
             print_text(state=self.state, text=f"Manual tool call: {tool_name}")
             self.response.write_response(stream=False, agent_response=tool_call_response)

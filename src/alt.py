@@ -1,6 +1,5 @@
 import threading
 import time
-from pynput.keyboard import Listener, Key
 from .my_print import print_text
 from .state import ApplicationState
 from typing import Union
@@ -24,7 +23,8 @@ class AltKeyDoublePressDetector:
         self.listener = None
         self.audio_process = audio_process
 
-    def handle_key_press(self, key: Key):
+    def handle_key_press(self, key):
+        from pynput.keyboard import Key
         if key in {Key.alt_l, Key.alt_r}:
             if type(self.threading) == threading.Lock:
                 with self.threading:
@@ -55,6 +55,7 @@ class AltKeyDoublePressDetector:
         if isinstance(self.threading, threading.Event):
             self.threading.set()
         try:
+            from pynput.keyboard import Listener
             self.listener = Listener(on_press=self.handle_key_press)
             self.listener.start()
             self.listener.join()

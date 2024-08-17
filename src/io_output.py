@@ -4,7 +4,6 @@ import requests
 import json
 import threading
 from typing import List
-from pynput import keyboard
 import urllib.parse
 from .config import Configuration
 from .state import ApplicationState
@@ -150,6 +149,7 @@ class TextToSpeech:
                 raise e
 
     def _start_listener(self):
+        from pynput import keyboard
         listener = keyboard.Listener(on_press=self.key_press_handler.handle_key_press)
         self.key_press_handler.listener = listener
         listener.start()
