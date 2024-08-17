@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from typing import Tuple, Set
 from .state import ApplicationState
-import pyperclip
 import time
 import re
 import os
@@ -68,6 +67,7 @@ class Clipboard(PreParserInterface):
         return {"clipboard", "content", "copy"}
 
     def parse(self, question: str) -> Tuple[bool, str]:
+        import pyperclip
         try:
             clipboard_content = pyperclip.paste().rstrip('\n')
             _, found = check_text_for_phrases(None, question, self.phrases(), contains=True)
