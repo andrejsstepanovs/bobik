@@ -13,6 +13,7 @@ from .io_input import UserInput
 from .my_print import print_text
 from .history import History
 from .settings import Settings
+from langchain_core.exceptions import OutputParserException
 
 
 class ConversationManager:
@@ -153,6 +154,10 @@ class ConversationManager:
             except KeyboardInterrupt:
                 if not self.state.is_quiet:
                     print("OK...")
+                break
+            except OutputParserException:
+                print_text(state=self.state, text="Output parser exception.")
+                self.response.respond("Agent failed parsing answer. Please try different model.")
                 break
             except Exception as e:
                 tr = traceback.format_exc()
