@@ -6,7 +6,9 @@ import time
 import re
 import os
 from pathlib import Path
+import base64
 
+IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.webp', '.svg']
 
 class PreParserInterface:
     @abstractmethod
@@ -75,6 +77,42 @@ class Clipboard(PreParserInterface):
         except pyperclip.PyperclipException:
             return False, question
 
+# This don't work now. need to fix.
+class LocalImage(PreParserInterface):
+    def name(self) -> str:
+        return "localimage"
+
+    def description(self) -> str:
+        return "Adds local image content to question."
+
+    def phrases(self) -> Set[str]:
+        return {"image"}
+
+    def parse(self, question: str) -> Tuple[bool, str]:
+        found = False
+        paths = re.findall(r'[\w\./\\-]+', question)
+        existing_paths = [Path(path) for path in paths if Path(path).exists()]
+        for path in existing_paths:
+            # allow only absolute file paths.
+            if not os.path.isabs(path):
+                continue
+
+            extension = path.suffix.lower()
+            if extension in IMAGE_EXTENSIONS:
+                try:
+                    with open(path, 'rb') as file:
+                        found = True
+                        content = file.read()
+                        filenameenc = base64.b64encode(content)
+                        image_data = filenameenc.rstrip()
+                        filename = path.name
+                        image_attachment = f"data:image/{extension[1:]};base64,{image_data}"
+                        question = question.replace(str(path), f"\n<image extension=\"{extension[1:]}\" title=\"{filename}\" type=\"base64\">{image_attachment}</image>\n")
+                except IOError:
+                    pass
+
+        return found, question
+
 class LocalFile(PreParserInterface):
     def name(self) -> str:
         return "localfile"
@@ -94,12 +132,13 @@ class LocalFile(PreParserInterface):
             if not os.path.isabs(path):
                 continue
 
-            try:
-                with open(path, 'rb') as file:
-                    found = True
-                    content = file.read()
-                    filename = path.name
-                    question = question.replace(str(path), f"\n# File: {filename}\n```\n{content}\n```\n")
-            except IOError:
-                pass
+            if path.suffix.lower() not in IMAGE_EXTENSIONS:
+                try:
+                    with open(path, 'rb') as file:
+                        found = True
+                        content = file.read()
+                        filename = path.name
+                        question = question.replace(str(path), f"\n# File: {filename}\n```\n{content}\n```\n")
+                except IOError:
+                    pass
         return found, question

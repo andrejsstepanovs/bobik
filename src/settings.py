@@ -78,6 +78,7 @@ class PreParsers(BaseModel):
     clipboard: PreParser
     time: PreParser
     file: PreParser
+    image: PreParser
 
 
 class Tools(BaseModel):

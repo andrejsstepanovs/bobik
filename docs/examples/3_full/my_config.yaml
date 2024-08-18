@@ -50,6 +50,8 @@ pre_parsers:
   time: { enabled: true }
   # each time file or code is mentioned together with path to file. If file is found, it will be added to question as extra context.
   file: { enabled: true }
+  # embeds image to request. This is not working now! It is here for future use.
+  image: { enabled: false }
 tools:
   # enable them one by one while checking that everything works. Agent is able to use multiple tools before getting to final answer.
   wttr_weather: { enabled: true }

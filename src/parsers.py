@@ -1,4 +1,4 @@
-from .enrichers import check_text_for_phrases, CurrentTime, Clipboard, LocalFile, PreParserInterface
+from .enrichers import check_text_for_phrases, CurrentTime, Clipboard, LocalFile, LocalImage, PreParserInterface
 from typing import List
 from .state import ApplicationState
 from .config import Configuration
@@ -14,6 +14,7 @@ class StateTransitionParser:
         self.add_enricher(self.config.settings.pre_parsers.clipboard.enabled, Clipboard())
         self.add_enricher(self.config.settings.pre_parsers.time.enabled, CurrentTime(timezone=self.config.prompt_replacements["timezone"]))
         self.add_enricher(self.config.settings.pre_parsers.file.enabled, LocalFile())
+        self.add_enricher(self.config.settings.pre_parsers.image.enabled, LocalImage())
 
     def add_enricher(self, enabled: bool, parser: PreParserInterface):
         if enabled:
