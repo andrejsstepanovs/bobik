@@ -31,15 +31,20 @@ class CalendarEventTool(BaseTool):
 
         filter_date: Optional[datetime] = dateparser.parse(date) if date else None
 
+        found = False
         for event in events:
             event_date = event["start"].strftime("%Y-%m-%d")
             if filter_date and filter_date.strftime("%Y-%m-%d") != event_date:
                 continue
 
+            found = True
             output.append("")
             output.append(f"Date: {event_date} {'(Today)' if now.date() == event['start'].date() else ''}")
             output.append(f"Event: {event['summary'].replace(',', ' ')}")
             output.append(f"Time: {event['start'].strftime('%H:%M')} - {event['end'].strftime('%H:%M')}")
             output.append(f"Calendar: {event['calendar'] if event['calendar'].lower() != event['name'].lower() else event['name']}")
+
+        if not found:
+            output.append("No events, there is nothing planned.")
 
         return json.dumps(output)
