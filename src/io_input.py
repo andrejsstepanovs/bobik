@@ -130,7 +130,8 @@ class UserInput:
                 else:
                     self._ignore_next_questions = None
 
-            text: str = input(f"{Fore.YELLOW}{self.config.user_name}:{Fore.RESET} ")
+            print(f"{Fore.YELLOW}{self.config.user_name}:{Fore.RESET} ", end="")
+            text: str = input()
 
             try:
                 # Check if clipboard content exists and appended it to the question.
