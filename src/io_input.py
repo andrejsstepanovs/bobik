@@ -10,6 +10,7 @@ from .transcript import Transcript
 from .pkg.beep import BeepGenerator
 from .my_print import print_text
 import sys
+from colorama import Fore, Style, init as colorama_init
 from deepgram import (
     DeepgramClient,
     DeepgramClientOptions,
@@ -22,6 +23,7 @@ if os.name == 'nt':
 else:
     import readline
 
+colorama_init()
 
 async def _listen_to_input(config: Configuration, state: ApplicationState, transcript_collector: Transcript, callback):
     if state.input_model_options.provider == "deepgram":
@@ -37,21 +39,21 @@ async def _listen_to_input(config: Configuration, state: ApplicationState, trans
             deepgram_client: DeepgramClient = DeepgramClient(api_key=config.api_keys["deepgram"], config=client_config)
 
             deepgram_connection = deepgram_client.listen.asynclive.v("1")
-            print_text(state=state, text="\033[93m" + "Listening..." + "\033[0m")
+            print_text(state=state, text=f"{Fore.YELLOW}Listening...{Style.RESET_ALL}")
 
             async def on_message(self, result, **kwargs):
                 sentence: str = result.channel.alternatives[0].transcript
 
                 if not result.speech_final:
                     if len(sentence.strip()) > 0:
-                        print_text(state=state, text=f"{config.user_name}: \033[91m {sentence} ... \033[0m")
+                        print_text(state=state, text=f"{config.user_name}: {Fore.RED}{sentence} ...{Style.RESET_ALL}")
                     transcript_collector.add_section(sentence)
                 else:
                     transcript_collector.add_section(sentence)
                     full_sentence: str = transcript_collector.retrieve_transcript()
                     if len(full_sentence.strip()) > 0:
                         full_sentence = full_sentence.strip()
-                        print_text(state=state, text=f"{config.user_name}: \033[32[1m {full_sentence} \033[0m")
+                        print_text(state=state, text=f"{config.user_name}: {Fore.GREEN}{Style.BRIGHT}{full_sentence}{Style.RESET_ALL}")
                         callback(full_sentence)
                         transcript_collector.clear_transcript()
                         transcription_complete.set()
@@ -128,7 +130,7 @@ class UserInput:
                 else:
                     self._ignore_next_questions = None
 
-            text: str = input(f"\033[33m{self.config.user_name}:\033[0m ")
+            text: str = input(f"{Fore.YELLOW}{self.config.user_name}:{Fore.RESET} ")
 
             try:
                 # Check if clipboard content exists and appended it to the question.

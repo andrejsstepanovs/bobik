@@ -11,6 +11,9 @@ from .parsers import print_text
 from .alt import AltKeyDoublePressDetector
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables.utils import AddableDict
+from colorama import Fore, Style, init as colorama_init
+
+colorama_init()
 
 
 class TextToSpeech:
@@ -30,7 +33,7 @@ class TextToSpeech:
 
         if stream:
             if not self.state.is_quiet:
-                print(f"\033[35m{self.config.agent_name}:\033[0m ", end="")
+                print(f"{Fore.MAGENTA}{self.config.agent_name}:{Style.RESET_ALL} ", end="")
             for chunk in agent_response:
                 txt = self._response_to_str(response=chunk, is_quiet=self.state.is_quiet)
                 print(txt, end="", flush=True)

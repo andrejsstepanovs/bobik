@@ -14,6 +14,9 @@ from .my_print import print_text
 from .history import History
 from .settings import Settings
 from langchain_core.exceptions import OutputParserException
+from colorama import Fore, Style, init as colorama_init
+
+colorama_init()
 
 
 class ConversationManager:
@@ -80,7 +83,7 @@ class ConversationManager:
     async def main_loop(self, questions: list[str] = None, print_questions: bool = False):
         async def answer(question: str = None):
             if print_questions:
-                print(f"{self.config.user_name}: \033[33m[1m {question} \033[0m")
+                print(f"{self.config.user_name}: {Fore.YELLOW}{Style.BRIGHT}{question}{Style.RESET_ALL}")
             stop = await self.question_answer(question=question)
             return stop or self.state.is_stopped
 
@@ -191,9 +194,9 @@ class ConversationManager:
         if task_name not in self.config.settings.tasks:
             return False
         def print_status(status: str):
-            color = "\033[96m"
-            color_bold = "\033[96[1m"
-            reset = "\033[0m"
+            color = Fore.CYAN
+            color_bold = Fore.CYAN + Style.BRIGHT
+            reset = Style.RESET_ALL
             txt = f"{color}-> Task{reset} '{color_bold}{task_name}{reset}' {color}{status}{reset}"
             print_text(state=self.state, text=txt)
 
@@ -207,10 +210,10 @@ class ConversationManager:
         if self.state.is_quiet:
             return
 
-        yellow = "\033[93m"
-        red_bold_underline = "\033[91;1;4m"
-        reset = "\033[0m"
-        blue = "\033[94m"
+        yellow = Fore.YELLOW
+        red_bold_underline = Fore.RED + Style.BRIGHT + "\033[4m"
+        reset = Style.RESET_ALL
+        blue = Fore.BLUE
 
         mode = "simple"
         if self.state.are_tools_enabled:
