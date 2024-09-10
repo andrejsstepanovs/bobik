@@ -112,6 +112,7 @@ class ConversationManager:
             return False
 
         if await self._tasks(question):
+
             return False
 
         clean_questions, found = self.pre_parse_questions(questions=[self.user_input.get()])
@@ -201,7 +202,8 @@ class ConversationManager:
             print_text(state=self.state, text=txt)
 
         print_status("started")
-        await self.main_loop(questions=self.config.settings.tasks[task_name] + ["quit"], print_questions=True)
+        questions = self.config.settings.tasks[task_name] + ["quit"]
+        await self.main_loop(questions=questions, print_questions=True)
         print_status("finished")
         return True
 
