@@ -3,6 +3,9 @@ from typing import Tuple, Set
 from .state import ApplicationState
 import pyperclip
 import time
+from datetime import datetime
+from datetime import timezone
+import pytz
 import re
 import os
 from pathlib import Path
@@ -59,8 +62,20 @@ class CurrentTime(PreParserInterface):
         return set(phrase + reference + months + weekdays + weekdays_short)
 
     def parse(self, question: str) -> Tuple[bool, str]:
-        current_time: str = time.strftime("%H:%M:%S")
-        current_date: str = time.strftime("%Y-%m-%d")
+        local_time = datetime.now()
+        utc_time = datetime.now(timezone.utc)
+        time_difference = abs(local_time - utc_time.replace(tzinfo=None))
+        system_is_utc = time_difference.total_seconds() < 1
+
+        if system_is_utc and self.timezone != "":
+            user_tz = pytz.timezone(self.timezone)
+            user_time = utc_time.astimezone(user_tz)
+            current_time: str = user_time.strftime("%H:%M:%S")
+            current_date: str = user_time.strftime("%Y-%m-%d")
+        else:
+            current_time: str = time.strftime("%H:%M:%S")
+            current_date: str = time.strftime("%Y-%m-%d")
+
         _, found = check_text_for_phrases(None, question, self.phrases(), contains=True)
         return found, question + f"\n- Today:\n-- Date: {current_date}\n-- Time: {current_time}\n-- Timezone: {self.timezone}" if found else (False, question)
 
