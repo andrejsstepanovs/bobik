@@ -59,7 +59,7 @@ class CurrentTime(PreParserInterface):
         months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
         weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
         weekdays_short = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-        return set(phrase + reference + months + weekdays + weekdays_short)
+        return set(phrase).union(reference, months, weekdays, weekdays_short)
 
     def parse(self, question: str) -> Tuple[bool, str]:
         local_time = datetime.now()
