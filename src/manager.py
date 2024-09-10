@@ -112,7 +112,6 @@ class ConversationManager:
             return False
 
         if await self._tasks(question):
-
             return False
 
         clean_questions, found = self.pre_parse_questions(questions=[self.user_input.get()])
@@ -194,6 +193,7 @@ class ConversationManager:
     async def _tasks(self, task_name: str = None) -> bool:
         if task_name not in self.config.settings.tasks:
             return False
+
         def print_status(status: str):
             color = Fore.CYAN
             color_bold = Fore.CYAN + Style.BRIGHT
@@ -201,10 +201,24 @@ class ConversationManager:
             txt = f"{color}-> Task{reset} '{color_bold}{task_name}{reset}' {color}{status}{reset}"
             print_text(state=self.state, text=txt)
 
+        last_model = self.state.llm_model
+        last_is_agent =self.state.are_tools_enabled
+        last_is_quiet =self.state.is_quiet
+
         print_status("started")
-        questions = self.config.settings.tasks[task_name] + ["quit"]
-        await self.main_loop(questions=questions, print_questions=True)
+        questions = self.config.settings.tasks[task_name]
+        questions.insert(0, "quiet")
+
+        for question in questions:
+            print(question)
+            await self.question_answer(question=question)
         print_status("finished")
+
+        self.state.llm_model = last_model
+        self.state.are_tools_enabled = last_is_agent
+        self.state.is_quiet = last_is_quiet
+        self.reload_agent()
+
         return True
 
     def _print_status(self):
