@@ -51,7 +51,12 @@ class CurrentTime(PreParserInterface):
         return "Adds time context to question."
 
     def phrases(self) -> Set[str]:
-        return {"time", "date", "now", "today", "tomorrow", "yesterday", "week", "month", "year", "current"}
+        phrase = ["time", "date", "now", "soon", "latest", "current", "clock", "calendar"]
+        reference = ["today", "tomorrow", "yesterday", "weekend", "week", "month", "year", "current"]
+        months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+        weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        weekdays_short = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+        return set(phrase + reference + months + weekdays + weekdays_short)
 
     def parse(self, question: str) -> Tuple[bool, str]:
         current_time: str = time.strftime("%H:%M:%S")
