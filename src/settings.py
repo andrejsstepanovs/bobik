@@ -84,6 +84,7 @@ class PreParsers(BaseModel):
 class Tools(BaseModel):
     bing_search: Tool
     bing_news: Tool
+    wolfram_alpha: Tool
     wttr_weather: Tool
     wikipedia: Tool
     google_search: Tool

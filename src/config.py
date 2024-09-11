@@ -31,6 +31,7 @@ class Configuration:
             "runpod": os.getenv("RUNPOD_PROVIDER_API_KEY"),
             "serpapi": os.getenv("SERPAPI_API_KEY"),
             "bing": os.getenv("BING_SUBSCRIPTION_KEY"),
+            "wolfram_alpha": os.getenv("WOLFRAM_ALPHA_APPID"),
         }
 
         self.urls: Dict[str, Union[str, Dict[str, str]]] = {

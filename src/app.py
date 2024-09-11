@@ -15,6 +15,7 @@ from .tool_loader import ToolLoader
 from .pkg.beep import BeepGenerator
 from .llm_agent import LargeLanguageModelAgent
 from .parsers import StateTransitionParser
+import nest_asyncio
 
 load_dotenv()
 
@@ -81,6 +82,7 @@ class App:
         """Start the main loop and print or speak multiple conversation answers."""
         questions, found = self.get_manager().pre_parse_questions(questions=questions)
         try:
+            nest_asyncio.apply()
             asyncio.run(self.get_manager().main_loop(questions))
         except KeyboardInterrupt:
             print_text(state=self.state, text="Exiting...")

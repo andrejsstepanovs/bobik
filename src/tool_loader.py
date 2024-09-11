@@ -61,6 +61,7 @@ class ToolLoader:
             "clear_memory": lambda: self.add_tool(state_tools.ResetChat(state=self.state)),
             "wikipedia": lambda: self.tools.extend(load_tools(['wikipedia'])),
             "google_search": lambda: self.tools.extend(load_tools(["serpapi"])) if self.config.api_keys["serpapi"] else None,
+            "wolfram_alpha": lambda: self.tools.extend(load_tools(['wolfram-alpha'])),
         }
 
         for name in self.available_tool_names():
@@ -92,6 +93,7 @@ class ToolLoader:
             "clear_memory",
             "wikipedia",
             "google_search",
+            "wolfram_alpha",
         ]
         return [tool_name for tool_name in tools_names if self._is_tool_enabled(tool_name)]
 
@@ -123,3 +125,4 @@ class ToolLoader:
         except FileNotFoundError:
             print(f"File {calendar_config_file} not found, skipping calendar tool...")
             return None
+
