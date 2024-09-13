@@ -97,7 +97,7 @@ class Clipboard(PreParserInterface):
         except pyperclip.PyperclipException:
             return False, question
 
-# This don't work now. need to fix.
+# Works only with gpt4o without agent tools. So "gpt4o llm what is in the image /full/path/to/image.jpg"
 class LocalImage(PreParserInterface):
     def name(self) -> str:
         return "localimage"
@@ -120,14 +120,10 @@ class LocalImage(PreParserInterface):
             extension = path.suffix.lower()
             if extension in IMAGE_EXTENSIONS:
                 try:
-                    with open(path, 'rb') as file:
+                    with open(path, 'rb') as image_file:
                         found = True
-                        content = file.read()
-                        filenameenc = base64.b64encode(content)
-                        image_data = filenameenc.rstrip()
-                        filename = path.name
-                        image_attachment = f"data:image/{extension[1:]};base64,{image_data}"
-                        question = question.replace(str(path), f"\n<image extension=\"{extension[1:]}\" title=\"{filename}\" type=\"base64\">{image_attachment}</image>\n")
+                        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+                        question = question.replace(str(path), f"\n<image_question extension=\"{extension[1:]}\" title=\"{path.name}\">{base64_image}</image_question>\n")
                 except IOError:
                     pass
 

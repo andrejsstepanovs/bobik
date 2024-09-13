@@ -133,7 +133,7 @@ venv.bak/
 # Spyder project settings
 .spyderproject
 .spyproject
-/pyproject.toml
+/py
 
 # Rope project settings
 .ropeproject

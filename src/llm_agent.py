@@ -1,5 +1,7 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 from langchain_core.exceptions import OutputParserException
+import re
+from langchain_core.messages import HumanMessage
 from langchain.memory import ConversationBufferMemory
 from langchain.agents import initialize_agent, AgentExecutor
 from langchain_core.output_parsers import StrOutputParser
@@ -81,10 +83,10 @@ class LargeLanguageModelAgent:
         )
 
     def ask_question(self, text: str, stream: bool = False) -> str:
+        question = self.prepare_question(question=text)
         if self.state.are_tools_enabled:
-            question: Dict[str, Any] = {"input": text}
             return self.agent.stream(input=question) if stream else self.agent.invoke(input=question)
-        return self.chain.stream(text) if stream else self.model.invoke(text)
+        return self.chain.stream(question) if stream else self.model.invoke(question)
 
     @staticmethod
     def _handle_error(error: Exception) -> str:
@@ -106,3 +108,29 @@ AI: [your response here]
 
 Please answer again while complying to rules and format just mentioned!
 """
+
+    def prepare_question(self, question: str):
+        if "image_question" not in question:
+            if self.state.are_tools_enabled:
+                question: Dict[str, Any] = {"input": question}
+            return question
+
+        data = re.search(r'(?P<before>.*)<image_question extension="(?P<extension>.*?)" title="(?P<title>.*?)">(?P<image>.*?)</image_question>(?P<after>.*)', question, re.DOTALL)
+        if not data:
+            if self.state.are_tools_enabled:
+                question: Dict[str, Any] = {"input": question}
+            return question
+
+        image_base64 = data.group("image")
+        image_extension = data.group("extension")
+        before_text = data.group("before")
+        after_text = data.group("after")
+
+        return [
+            HumanMessage(
+                content=[
+                    {"type": "image_url", "image_url": {"url": f"data:image/{image_extension};base64,{image_base64}"}},
+                    {"type": "text", "text": before_text + " " + after_text},
+                ]
+            )
+        ]
