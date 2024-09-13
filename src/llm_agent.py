@@ -115,21 +115,25 @@ Please answer again while complying to rules and format just mentioned!
                 question: Dict[str, Any] = {"input": question}
             return question
 
-        data = re.search(r'(?P<before>.*)<image_question extension="(?P<extension>.*?)" title="(?P<title>.*?)">(?P<image>.*?)</image_question>(?P<after>.*)', question, re.DOTALL)
+        data = re.search(r'(?P<before>.*)<image_question extension="(?P<extension>.*?)" title="(?P<title>.*?)" type="(?P<type>.*?)">(?P<image>.*?)</image_question>(?P<after>.*)', question, re.DOTALL)
         if not data:
             if self.state.are_tools_enabled:
                 question: Dict[str, Any] = {"input": question}
             return question
 
-        image_base64 = data.group("image")
+        image_type = data.group("type")
+        image_content = data.group("image")
         image_extension = data.group("extension")
         before_text = data.group("before")
         after_text = data.group("after")
 
+        if image_type == "base64":
+            image_content = f"data:image/{image_extension};base64,{image_content}"
+
         return [
             HumanMessage(
                 content=[
-                    {"type": "image_url", "image_url": {"url": f"data:image/{image_extension};base64,{image_base64}"}},
+                    {"type": "image_url", "image_url": {"url": image_content}},
                     {"type": "text", "text": before_text + " " + after_text},
                 ]
             )

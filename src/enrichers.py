@@ -97,7 +97,7 @@ class Clipboard(PreParserInterface):
         except pyperclip.PyperclipException:
             return False, question
 
-# Works only with gpt4o without agent tools. So "gpt4o llm what is in the image /full/path/to/image.jpg"
+# Works only with gpt4o without agent tools. So "gpt4o llm what is in the image /full/path/to/image.jpg" or full https url.
 class LocalImage(PreParserInterface):
     def name(self) -> str:
         return "localimage"
@@ -110,6 +110,8 @@ class LocalImage(PreParserInterface):
 
     def parse(self, question: str) -> Tuple[bool, str]:
         found = False
+
+        # search for local image file
         paths = re.findall(r'[\w\./\\-]+', question)
         existing_paths = [Path(path) for path in paths if Path(path).exists()]
         for path in existing_paths:
@@ -121,11 +123,21 @@ class LocalImage(PreParserInterface):
             if extension in IMAGE_EXTENSIONS:
                 try:
                     with open(path, 'rb') as image_file:
+                        type = "base64"
                         found = True
                         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
-                        question = question.replace(str(path), f"\n<image_question extension=\"{extension[1:]}\" title=\"{path.name}\">{base64_image}</image_question>\n")
+                        question = question.replace(str(path), f"\n<image_question extension=\"{extension[1:]}\" title=\"{path.name}\" type=\"{type}\">{base64_image}</image_question>\n")
                 except IOError:
                     pass
+
+        # search for image url
+        if not found:
+            urls = re.findall(r'(https?://[^\s]+)', question)
+            for url in urls:
+                if any(url.lower().endswith(ext) for ext in IMAGE_EXTENSIONS):
+                    image_type = "url"
+                    found = True
+                    question = question.replace(url, f"\n<image_question extension=\"{url.split('.')[-1]}\" title=\"{url.split('/')[-1]}\" type=\"{image_type}\">{url}</image_question>\n")
 
         return found, question
 
