@@ -36,6 +36,7 @@ class LanguageModelProvider:
             "runpod": VLLMOpenAI,
             "lm_studio": ChatOpenAI,
             "ollama": ChatOpenAI,
+            "openrouter": ChatOpenAI,
         }
 
         model_class: Optional[Type] = models.get(provider_name)
@@ -55,6 +56,10 @@ class LanguageModelProvider:
             "anthropic": {"anthropic_api_key": self.config.api_keys["anthropic"]},
             "openai_custom": {
                 "openai_api_key": self.config.api_keys["openai_custom"],
+            },
+            "openrouter": {
+                "openai_api_key": self.config.api_keys["openrouter"],
+                "base_url": self.config.urls["openrouter"],
             },
             "lm_studio": {
                 "base_url": self.config.urls["lm_studio"],

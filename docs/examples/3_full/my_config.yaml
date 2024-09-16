@@ -80,31 +80,27 @@ models:
   groq:
     provider: groq
     model: llama3-70b-8192
-    synonyms: ["llama 70", "fastest", "free"]
   gpt3:
     provider: openai
     model: gpt-3.5-turbo
     temperature: 1.9
-    synonyms: ["gpt 3", "gpt-3"]
   gpt4o:
     provider: openai
     model: gpt-4o
-    synonyms: ["gpt 4o", "gpt 4 o", "newest", "latest"]
   gpt4:
     provider: openai
     model: gpt-4
-    synonyms: ["gpt 4", "gpt-4"]
   mistral:
     provider: mistral
     model: mistral-large-latest
     # specific use case when we dont want our agent to be chat bot.
     agent_type: zero-shot-react-description
-    synonyms: ["mixtral"]
-  # check if gemini is allowed in your country.
   google:
     provider: google
     model: gemini-1.5-flash-latest
-    synonyms: ["gemini"]
+  openrouter:
+    provider: openrouter
+    model: meta-llama/llama-3.1-405b-instruct
 
   # CUSTOM MODEL EXAMPLE
   code:
@@ -123,17 +119,14 @@ models:
   ollama:
     provider: ollama
     model: nexusraven:latest
-    synonyms: ["private", "secure"]
   lmstudio:
     provider: lm_studio
     # model value is not needed, but code requires something.
     model: current
-    synonyms: ["local"]
   my_company:
     provider: openai_custom
     model: bedrock/mistral.mistral-large-2402-v1:0
     base_url: http://localhost:1234
-    synonyms: ["local"]
 
   # OTHER PRIVATE PROVIDERS
   runpod: # Set runpod api key env var, then Start Serverless vLLM
