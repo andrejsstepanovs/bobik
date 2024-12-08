@@ -42,36 +42,59 @@ class Calendar:
     def load_ics_files(self):
         for calendar in self.calendars["ics"]:
             if calendar["type"] == "url":
-                response = requests.get(calendar["url"])
-                calendar["ics"] = response.text
+                try:
+                    response = requests.get(calendar["url"])
+                    response.raise_for_status()
+                    calendar["ics"] = response.text
+                except requests.exceptions.RequestException as e:
+                    print(f"Error loading ICS file from URL: {e}")
             elif calendar["type"] == "zip_dir":
                 files = self.get_files_by_prefix(calendar["directory"], calendar["file"])
                 sorted_files = self.sort_files_by_creation_time(files)
                 if len(sorted_files) == 0:
                     print_text(state=self.state, text=f"No files found for calendar {calendar['name']}")
                     continue
+                ics_file_found = False
                 for file in sorted_files:
+                    print(f"Loading file: {file}")
                     file_name, file_extension = os.path.splitext(file)
                     if file_extension == ".zip":
-                        with zipfile.ZipFile(file_name+file_extension, 'r') as zip_file:
-                            file_list: list[str] = zip_file.namelist()
-                            if len(file_list) == 0:
-                                raise ValueError(f"No files found inside zip: {zip_file}")
+                        try:
+                            with zipfile.ZipFile(file_name+file_extension, 'r') as zip_file:
+                                file_list: list[str] = zip_file.namelist()
+                                if len(file_list) == 0:
+                                    raise ValueError(f"No files found inside zip: {zip_file}")
 
-                            with tempfile.TemporaryDirectory() as temp_dir:
-                                for inside_zip_file in file_list:
-                                    if not inside_zip_file.startswith(calendar["calendar_name"]):
-                                        continue
-                                    if "ics" in calendar and calendar["ics"] != "":
-                                        continue
-                                    zip_file.extract(inside_zip_file, temp_dir)
-                                    with open(os.path.join(temp_dir, inside_zip_file), encoding='utf-8', mode='r') as extracted_file:
-                                        calendar["ics"] = extracted_file.read()
+                                with tempfile.TemporaryDirectory() as temp_dir:
+                                    for inside_zip_file in file_list:
+                                        if ics_file_found:
+                                            break
+                                        if not inside_zip_file.startswith(calendar["calendar_name"]):
+                                            continue
+                                        zip_file.extract(inside_zip_file, temp_dir)
+                                        target = os.path.join(temp_dir, inside_zip_file)
+                                        print(f"Extracting file: {inside_zip_file} into {target}")
+                                        with open(target, encoding='utf-8', mode='r') as extracted_file:
+                                            print("Reading")
+                                            calendar["ics"] = extracted_file.read()
+                                            print("Extracted")
+                                            ics_file_found = True
+                                            break
+                        except zipfile.BadZipfile as e:
+                            print(f"Error extracting ICS file from ZIP archive: {e}")
                     elif file_extension == ".ics":
-                        with open(file_name+file_extension, encoding='utf-8', mode='r') as file:
-                            calendar["ics"] = file.read()
+                        if ics_file_found:
+                            break
+                        try:
+                            with open(file_name+file_extension, encoding='utf-8', mode='r') as file:
+                                calendar["ics"] = file.read()
+                                ics_file_found = True
+                        except UnicodeDecodeError as e:
+                            print(f"Error reading ICS file: {e}")
                     else:
                         raise ValueError(f"Unknown file extension: {file_extension}")
+                    if ics_file_found:
+                        break
             else:
                 raise ValueError("Unknown calendar type")
 
