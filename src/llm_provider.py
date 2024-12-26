@@ -31,6 +31,7 @@ class LanguageModelProvider:
             "mistral": ChatMistralAI,
             "groq": ChatGroq,
             "openai": ChatOpenAI,
+            "deepseek": ChatOpenAI,
             "anthropic": ChatAnthropic,
             "openai_custom": ChatOpenAI,
             "runpod": VLLMOpenAI,
@@ -54,6 +55,10 @@ class LanguageModelProvider:
             "groq": {"groq_api_key": self.config.api_keys["groq"]},
             "openai": {"openai_api_key": self.config.api_keys["openai"]},
             "anthropic": {"anthropic_api_key": self.config.api_keys["anthropic"]},
+            "deepseek": {
+                "base_url": self.config.urls["deepseek"],
+                "openai_api_key": self.config.api_keys["deepseek"],
+            },
             "openai_custom": {
                 "openai_api_key": self.config.api_keys["openai_custom"],
             },

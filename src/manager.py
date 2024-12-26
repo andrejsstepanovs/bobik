@@ -285,6 +285,7 @@ class ConversationManager:
             "mistral": "mistral",
             "groq": "groq",
             "openai": "openai",
+            "deepseek": "deepseek",
             "openai_custom": ("openai_custom", "openai_custom"),
             "lm_studio": "openai_custom",
             "ollama": "1"
