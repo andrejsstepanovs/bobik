@@ -11,7 +11,8 @@ class MakeStorygenStory(BaseTool):
         "Writes a bedtime story and sends to user as audio file. "
         "Use this tool when asked to generate, make or read a bedtime story. "
         "Input is a prompt about what story should be about. "
-        "Successful story generation will contain audio file name that user will access themselves."
+        "Successful story generation will contain audio file name that user will access themselves. "
+        "Make sure to include the file name in the final response."
     )
 
     def _run(self, prompt: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
