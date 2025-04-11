@@ -97,6 +97,7 @@ class Tools(BaseModel):
     enable_disable_tools: Tool
     output_switch: Tool
     ics_calendar: Tool
+    storygen: Tool
 
     def get(self, name: str) -> Tool:
         return getattr(self, name)

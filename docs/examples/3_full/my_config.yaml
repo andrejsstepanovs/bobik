@@ -68,6 +68,7 @@ tools:
   bing_news: { enabled: false }
   google_search: { enabled: false }
   wolfram_alpha: { enabled: false }
+  storygen: { enabled: false }
   ics_calendar:
     enabled: false
     config_file: /full_path_to/my_calendar.yaml

@@ -6,6 +6,7 @@ from langchain_community.tools.bing_search.tool import BingSearchResults
 from langchain.memory import ConversationBufferMemory
 from langchain_community.utilities import SerpAPIWrapper
 from .tools import state as state_tools
+from .tools import storygen as storygen_tools
 from .tools import news as news_tools
 from .tools import datetime as datetime_tools
 from .tools import my_calendar as calendar_tools
@@ -62,6 +63,7 @@ class ToolLoader:
             "wikipedia": lambda: self.tools.extend(load_tools(['wikipedia'])),
             "google_search": lambda: self.tools.extend(load_tools(["serpapi"])) if self.config.api_keys["serpapi"] else None,
             "wolfram_alpha": lambda: self.tools.extend(load_tools(['wolfram-alpha'])),
+            "storygen": lambda: self.add_tool(storygen_tools.MakeStorygenStory(state=self.state)),
         }
 
         for name in self.available_tool_names():
@@ -94,6 +96,7 @@ class ToolLoader:
             "wikipedia",
             "google_search",
             "wolfram_alpha",
+            "storygen",
         ]
         return [tool_name for tool_name in tools_names if self._is_tool_enabled(tool_name)]
 
