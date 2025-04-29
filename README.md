@@ -44,10 +44,11 @@ To install the AI Assistant, follow these steps:
 0. For Windows install: `python -m pip install pyreadline`.
 1. Install ffplay if you want to have audio output.
 2. For Ubuntu install audio `sudo apt install portaudio19-dev`
-3. Clone the repository from GitHub.
-4. Install the required packages using `pip install -r requirements.txt`.
-5. See `docs/examples` to set up necessary environment variables and config yaml file.
-6. Run the `run.py` script to start the AI Assistant.
+3. You need python dev lib too `sudo apt-get install python3-dev`
+4. Clone the repository from GitHub.
+5. Install the required packages using `pip install -r requirements.txt`.
+6. See `docs/examples` to set up necessary environment variables and config yaml file.
+7. Run the `run.py` script to start the AI Assistant.
 
 ## Windows
 Main functionality on Windows is working fine. 
